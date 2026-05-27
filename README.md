@@ -60,6 +60,40 @@ overmind stop          # stop everything
 
 The Vite dev server proxies `/api/*` to the backend, so no CORS issues during development.
 
+### Option B — Docker Compose
+
+Pre-built images are published to the GitHub Container Registry on every push to `main` and on version tags.
+
+Create a `docker-compose.yml`:
+
+```yaml
+services:
+  ratiodash:
+    image: ghcr.io/jollyroger-1989/ratiodash:main
+    ports:
+      - "8080:8080"
+    volumes:
+      - ratiodash_data:/data
+    environment:
+      SERVER_ADDR: "0.0.0.0:8080"
+      DATABASE_URL: "/data/ratiodash.db"
+    restart: unless-stopped
+
+volumes:
+  ratiodash_data:
+```
+
+Then start it:
+
+```bash
+docker compose up -d
+```
+
+The app is available at **http://localhost:8080**.  
+The SQLite database is persisted in the `ratiodash_data` named volume.
+
+To pin a specific release instead of tracking `main`, replace the tag with a version (e.g. `ghcr.io/jollyroger-1989/ratiodash:1.0.0`).
+
 ## API docs
 
 Swagger UI is served at **http://localhost:8080/docs**
