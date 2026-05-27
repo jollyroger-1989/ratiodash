@@ -1,0 +1,237 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #020817;
+  --bg-surface: rgba(10, 16, 42, 0.75);
+  --bg-surface-hover: rgba(18, 26, 60, 0.9);
+  --border: rgba(99, 102, 241, 0.22);
+  --border-bright: rgba(129, 140, 248, 0.5);
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-label: #6b7db3;
+  --accent: #818cf8;
+  --accent-2: #c084fc;
+  --accent-glow: rgba(129, 140, 248, 0.15);
+  --ratio-good: #4ade80;
+  --ratio-warn: #fbbf24;
+  --ratio-bad: #f87171;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 24px rgba(129, 140, 248, 0.1);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 15% 30%, rgba(88, 28, 135, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 70%, rgba(30, 27, 75, 0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 10%, rgba(14, 50, 120, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 40%, rgba(76, 29, 149, 0.18) 0%, transparent 40%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Starfield handled by StarField.vue canvas component */
+
+#app {
+  position: relative;
+  z-index: 1;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+}
+
+/* ── Ratio colors ────────────────────────────────────── */
+.ratio-good { color: var(--ratio-good); }
+.ratio-warn { color: var(--ratio-warn); }
+.ratio-bad  { color: var(--ratio-bad); }
+
+/* ── Muted text ──────────────────────────────────────── */
+.muted       { color: var(--text-muted); font-size: 0.9rem; }
+.muted-small { color: var(--text-muted); font-size: 0.8rem; }
+
+/* ── Form fields ─────────────────────────────────────── */
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.field-optional {
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+}
+
+.field select option {
+  background: #0a1032;
+  color: var(--text);
+}
+
+.field input:disabled,
+.field select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Form layout ─────────────────────────────────────── */
+.fields-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.fields-row--config {
+  grid-template-columns: 1fr;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* ── Feedback messages ───────────────────────────────── */
+.form-error {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 6px;
+  color: var(--ratio-bad);
+  font-size: 0.9rem;
+}
+
+.form-success {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 6px;
+  color: #4ade80;
+  font-size: 0.9rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn-primary {
+  padding: 0.55rem 1.25rem;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: opacity 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 16px rgba(129, 140, 248, 0.3);
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.9; box-shadow: 0 0 24px rgba(129, 140, 248, 0.45); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-secondary {
+  padding: 0.55rem 1.25rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.btn-secondary:hover {
+  background: var(--accent-glow);
+  border-color: var(--border-bright);
+  color: var(--text);
+}
+
+.btn-test {
+  padding: 0.55rem 1.25rem;
+  background: rgba(129, 140, 248, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(129, 140, 248, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-test:hover:not(:disabled) {
+  background: rgba(129, 140, 248, 0.2);
+  border-color: var(--accent);
+}
+.btn-test:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-icon {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  padding: 0;
+  touch-action: manipulation;
+}
+.btn-icon.btn-edit:hover   { color: var(--accent); border-color: var(--accent); }
+.btn-icon.btn-delete:hover { color: var(--ratio-bad); border-color: var(--ratio-bad); }
+
+/* ── Mobile overrides ────────────────────────────────── */
+@media (max-width: 640px) {
+  .fields-row,
+  .fields-row--config {
+    grid-template-columns: 1fr;
+  }
+}

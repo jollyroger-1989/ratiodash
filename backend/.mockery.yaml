@@ -1,0 +1,22 @@
+with-expecter: true
+dir: internal/mocks
+outpkg: mocks
+packages:
+  github.com/jose/ratiodash/internal/domain:
+    interfaces:
+      TrackerRepository:
+      StatsRepository:
+      AuthRepository:
+      TrackerService:
+      StatsService:
+      ScraperRegistry:
+      TrackerScraper:
+      RefreshService:
+      Refresher:
+      NotifierConfigRepository:
+      NotifierConfigService:
+      NotifierBuilder:
+      Notifier:
+      AlertConfigRepository:
+      AlertConfigService:
+      AlertService:

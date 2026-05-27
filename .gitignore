@@ -1,0 +1,29 @@
+# Binaries / build artifacts
+backend/bin/
+backend/tmp/
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+
+# Go
+backend/vendor/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Embedded frontend assets (populated at build time; only .gitkeep is tracked)
+backend/internal/server/dist/*
+!backend/internal/server/dist/.gitkeep
+
+# Environment files
+.env
+.env.local
+frontend/.env
+frontend/.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
