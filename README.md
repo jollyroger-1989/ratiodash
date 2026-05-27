@@ -2,6 +2,12 @@
 
 A full-stack application with a Go REST API and a Vue 3 frontend.
 
+> [!WARNING]
+> **Code quality notice**
+>
+> - **Frontend** — largely AI-generated with minimal human review. Expect inconsistencies in style, structure, and edge-case handling. Treat it as a working prototype.
+> - **Backend** — human-controlled and reviewed. Architecture, business logic, and tests follow deliberate design decisions.
+
 ## Stack
 
 | Layer      | Technology                                                    |
@@ -18,25 +24,37 @@ A full-stack application with a Go REST API and a Vue 3 frontend.
 
 ## Getting started
 
+### Option A — Overmind (recommended)
+
+The `Procfile` defines two processes that run concurrently:
+
+| Process | Command | URL |
+|---------|---------|-----|
+| `api` | `cd backend && go run ./cmd/api` | http://localhost:8080 |
+| `web` | `cd frontend && npm run dev` | http://localhost:5173 |
+
 ```bash
-# 1. Install frontend dependencies
+# Install frontend dependencies first (once)
 make install
 
-# 2. Download Go modules
-make tidy
+# Start both processes together
+overmind start
+```
 
-# 3. Start backend  (http://localhost:8080)
-make dev-backend
+Useful overmind commands while running:
 
-# 4. Start frontend (http://localhost:5173)
-make dev-frontend
+```bash
+overmind connect api   # attach to backend output
+overmind connect web   # attach to frontend output
+overmind restart api   # restart backend only
+overmind stop          # stop everything
 ```
 
 The Vite dev server proxies `/api/*` to the backend, so no CORS issues during development.
 
 ## API docs
 
-Swagger UI is served at **http://localhost:8080/docs**  
+Swagger UI is served at **http://localhost:8080/docs**
 Raw OpenAPI 3.1 spec is at **http://localhost:8080/openapi.json**
 
 ## Project structure
@@ -80,3 +98,21 @@ ratiodash/
 |----------------|-----------------|--------------------------|
 | `SERVER_ADDR`  | `:8080`         | Backend listen address   |
 | `DATABASE_URL` | `ratiodash.db`  | SQLite file path         |
+
+## AI agents
+
+This project uses `AGENTS.md` files to give AI coding assistants (GitHub Copilot, Claude, etc.) structured context about the codebase. Each file is scoped to its directory and describes conventions, patterns, and step-by-step instructions relevant to that layer.
+
+| File | Scope |
+|------|-------|
+| [`AGENTS.md`](AGENTS.md) | Root — overall architecture, stack, running instructions, commit conventions |
+| [`backend/AGENTS.md`](backend/AGENTS.md) | Backend — FX module wiring, adding scrapers, adding domain objects |
+| [`backend/internal/handler/AGENTS.md`](backend/internal/handler/AGENTS.md) | HTTP handlers — Huma registration, request/response patterns |
+| [`backend/internal/repository/AGENTS.md`](backend/internal/repository/AGENTS.md) | Repositories — GORM conventions, migration pairing |
+| [`backend/internal/service/AGENTS.md`](backend/internal/service/AGENTS.md) | Services — business logic patterns |
+| [`backend/internal/notifier/AGENTS.md`](backend/internal/notifier/AGENTS.md) | Notifiers — adding new notification backends |
+| [`frontend/AGENTS.md`](frontend/AGENTS.md) | Frontend — Vue 3 conventions, store patterns, API client usage |
+
+When asking an agent to work on a specific layer, pointing it to the relevant `AGENTS.md` gives it enough context to follow project conventions without needing to read the entire codebase.
+
+
