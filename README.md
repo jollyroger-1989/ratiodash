@@ -1,6 +1,14 @@
 # RatioDash
 
-A full-stack application with a Go REST API and a Vue 3 frontend.
+A self-hosted dashboard for tracking your upload/download ratio across multiple torrent trackers.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Home](docs/screenshots/home.png) | ![Trackers](docs/screenshots/trackers.png) |
+| ![Tracker Detail](docs/screenshots/tracker-detail.png) | ![Reports](docs/screenshots/reports.png) |
+| ![Alerts](docs/screenshots/alerts.png)|
 
 > [!WARNING]
 > **Code quality notice**

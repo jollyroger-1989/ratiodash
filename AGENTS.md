@@ -124,3 +124,8 @@ Environment variables (backend, all optional):
 | `http://localhost:8080/api/v1/dashboard` | Latest stats per site |
 | `http://localhost:8080/docs` | Swagger / OpenAPI UI |
 | `http://localhost:8080/health` | Health check |
+
+
+## Commits
+
+Commit must follow Conventional Commits format: `<type>(<scope>): <description>`. Types include `feat`, `fix`, `docs`, `refactor`, etc. Scope is optional but encouraged for clarity (e.g. `service`, `handler`, `scraper`).
