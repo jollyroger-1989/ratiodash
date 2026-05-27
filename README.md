@@ -99,6 +99,17 @@ To pin a specific release instead of tracking `main`, replace the tag with a ver
 Swagger UI is served at **http://localhost:8080/docs**
 Raw OpenAPI 3.1 spec is at **http://localhost:8080/openapi.json**
 
+## Supported trackers
+
+| Scraper key | Tracker(s) | Auth method |
+|-------------|------------|-------------|
+| `unit3d`    | Any UNIT3D-based tracker (e.g. Generation-Free, G3mini-Tracker, The Old School, …) | API token |
+| `c411`      | c411.org | Username + password |
+| `torr9`     | Any Torr9-based tracker | Username + password |
+| `yggreborn` | YggReborn | Username (email) + password |
+
+To add support for a new tracker, copy `backend/internal/scraper/generic.go`, implement `Key()` and `Fetch()`, and register it in `scraper/module.go`.
+
 ## Project structure
 
 ```
