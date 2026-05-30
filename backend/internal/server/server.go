@@ -101,7 +101,24 @@ func NewRouter(cfg *config.Config, auth domain.AuthService) (*chi.Mux, huma.API)
 		fmt.Fprint(w, `{"status":"ok"}`)
 	})
 
-	api := humachi.New(router, huma.DefaultConfig("RatioDash API", "1.0.0"))
+	openAPIConfig := huma.DefaultConfig("RatioDash API", "1.0.0")
+	openAPIConfig.DocsRenderer = huma.DocsRendererSwaggerUI
+	if openAPIConfig.Components == nil {
+		openAPIConfig.Components = &huma.Components{}
+	}
+	if openAPIConfig.Components.SecuritySchemes == nil {
+		openAPIConfig.Components.SecuritySchemes = map[string]*huma.SecurityScheme{}
+	}
+	openAPIConfig.Components.SecuritySchemes["bearerAuth"] = &huma.SecurityScheme{
+		Type:         "http",
+		Scheme:       "bearer",
+		BearerFormat: "JWT",
+		Description:  "JWT token returned by POST /api/v1/auth/login",
+	}
+	// All API operations require JWT by default; public auth routes override this.
+	openAPIConfig.Security = []map[string][]string{{"bearerAuth": {}}}
+
+	api := humachi.New(router, openAPIConfig)
 
 	// Serve the embedded Vue SPA. In dev the dist/ placeholder has no
 	// index.html, so static serving is skipped and Vite handles the frontend.

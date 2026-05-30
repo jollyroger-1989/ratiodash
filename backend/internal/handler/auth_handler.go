@@ -106,7 +106,8 @@ func RegisterAuthRoutes(api huma.API, h *AuthHandler) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/auth/status",
 		Summary:     "Check whether credentials have been configured",
-		Tags:        []string{"Auth"},
+		Tags:        []string{"auth"},
+		Security:    []map[string][]string{},
 	}, h.Status)
 
 	huma.Register(api, huma.Operation{
@@ -114,7 +115,8 @@ func RegisterAuthRoutes(api huma.API, h *AuthHandler) {
 		Method:      http.MethodPost,
 		Path:        "/api/v1/auth/setup",
 		Summary:     "Create initial credentials (only works when none exist)",
-		Tags:        []string{"Auth"},
+		Tags:        []string{"auth"},
+		Security:    []map[string][]string{},
 	}, h.Setup)
 
 	huma.Register(api, huma.Operation{
@@ -122,7 +124,8 @@ func RegisterAuthRoutes(api huma.API, h *AuthHandler) {
 		Method:      http.MethodPost,
 		Path:        "/api/v1/auth/login",
 		Summary:     "Login and receive a signed JWT token",
-		Tags:        []string{"Auth"},
+		Tags:        []string{"auth"},
+		Security:    []map[string][]string{},
 	}, h.Login)
 
 	huma.Register(api, huma.Operation{
@@ -130,6 +133,6 @@ func RegisterAuthRoutes(api huma.API, h *AuthHandler) {
 		Method:      http.MethodPatch,
 		Path:        "/api/v1/settings/credentials",
 		Summary:     "Update the admin username and/or password",
-		Tags:        []string{"Settings"},
+		Tags:        []string{"settings"},
 	}, h.UpdateCredentials)
 }

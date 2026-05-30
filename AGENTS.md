@@ -120,8 +120,11 @@ Environment variables (backend, all optional):
 | URL | Description |
 |---|---|
 | `http://localhost:5173` | Vue frontend |
-| `http://localhost:8080/api/v1/sites` | Sites CRUD |
-| `http://localhost:8080/api/v1/dashboard` | Latest stats per site |
+| `http://localhost:8080/api/v1/auth/status` | Auth setup status (public) |
+| `http://localhost:8080/api/v1/auth/setup` | Initial credential setup (public) |
+| `http://localhost:8080/api/v1/auth/login` | Login and get JWT (public) |
+| `http://localhost:8080/api/v1/trackers` | Trackers CRUD (JWT required) |
+| `http://localhost:8080/api/v1/trackers/stats` | Latest stats per tracker (JWT required) |
 | `http://localhost:8080/docs` | Swagger / OpenAPI UI |
 | `http://localhost:8080/health` | Health check |
 
