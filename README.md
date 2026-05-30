@@ -101,7 +101,7 @@ Raw OpenAPI 3.1 spec is at **http://localhost:8080/openapi.json**
 
 ## Supported trackers
 
-| Scraper key | Tracker(s) | Auth method | Status |
+| Scraper key | Tracker(s) | Auth method | Tested |
 |-------------|------------|-------------|--------|
 | `abnormal` | ABNormal | Username + password | ❌ |
 | `c411` | C411 | Username + password | ✅ |
