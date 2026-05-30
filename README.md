@@ -2,15 +2,7 @@
 
 A self-hosted dashboard for tracking your upload/download ratio across multiple torrent trackers.
 
-## Screenshots
-
-| Title | Image |
-|---|---|
-| Home | ![Home](docs/screenshots/home.png) |
-| Trackers | ![Trackers](docs/screenshots/trackers.png) |
-| Tracker Detail | ![Tracker Detail](docs/screenshots/tracker-detail.png) |
-| Reports | ![Reports](docs/screenshots/reports.png) |
-| Alerts | ![Alerts](docs/screenshots/alerts.png) |
+![Home](docs/screenshots/home.png)
 
 > [!WARNING]
 > **Code quality notice**
