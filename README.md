@@ -89,10 +89,8 @@ Then start it:
 docker compose up -d
 ```
 
-The app is available at **http://localhost:8080**.  
+The app is available at **http://localhost:8080**.
 The SQLite database is persisted in the `ratiodash_data` named volume.
-
-To pin a specific release instead of tracking `main`, replace the tag with a version (e.g. `ghcr.io/jollyroger-1989/ratiodash:1.0.0`).
 
 ## API docs
 
