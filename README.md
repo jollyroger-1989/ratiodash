@@ -4,11 +4,13 @@ A self-hosted dashboard for tracking your upload/download ratio across multiple 
 
 ## Screenshots
 
-| | |
+| Title | Image |
 |---|---|
-| ![Home](docs/screenshots/home.png) | ![Trackers](docs/screenshots/trackers.png) |
-| ![Tracker Detail](docs/screenshots/tracker-detail.png) | ![Reports](docs/screenshots/reports.png) |
-| ![Alerts](docs/screenshots/alerts.png)|
+| Home | ![Home](docs/screenshots/home.png) |
+| Trackers | ![Trackers](docs/screenshots/trackers.png) |
+| Tracker Detail | ![Tracker Detail](docs/screenshots/tracker-detail.png) |
+| Reports | ![Reports](docs/screenshots/reports.png) |
+| Alerts | ![Alerts](docs/screenshots/alerts.png) |
 
 > [!WARNING]
 > **Code quality notice**
