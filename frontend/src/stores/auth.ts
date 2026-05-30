@@ -4,6 +4,7 @@ import { authApi } from '@/services/api'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('auth_token'))
+  const setupStatus = ref<boolean | null>(null)
 
   const isAuthenticated = computed(() => !!token.value)
 
@@ -24,10 +25,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function setup(username: string, password: string): Promise<void> {
     await authApi.setup(username, password)
+    setupStatus.value = true
   }
 
-  async function isSetup(): Promise<boolean> {
+  async function isSetup(forceRefresh = false): Promise<boolean> {
+    if (!forceRefresh && setupStatus.value !== null) {
+      return setupStatus.value
+    }
+
     const status = await authApi.status()
+    setupStatus.value = status.setup
     return status.setup
   }
 

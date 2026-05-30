@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
-import { authApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -60,7 +59,7 @@ router.beforeEach(async (to) => {
   // Check if credentials have been configured.
   let setup: boolean
   try {
-    setup = await authApi.status().then((s) => s.setup)
+    setup = await authStore.isSetup()
   } catch {
     // If the status check fails (e.g. server down), allow navigation.
     return true
