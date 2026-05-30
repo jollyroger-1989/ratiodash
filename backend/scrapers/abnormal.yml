@@ -1,0 +1,59 @@
+id: abnormal
+name: ABNormal
+description: >-
+  ABNormal private tracker definition migrated from tracker-dashboard JSON.
+language: fr-FR
+type: private
+encoding: UTF-8
+links:
+  - https://abn.lol/
+
+settings:
+  - name: username
+    type: text
+    label: Username
+    required: true
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  method: form
+  path: /Home/Login
+  inputs:
+    Username: "{{ .Config.username }}"
+    Password: "{{ .Config.password }}"
+    __RequestVerificationToken: "{{ .Captures.csrf }}"
+    RememberMe: "false"
+  response:
+    type: html
+  captures:
+    csrf:
+      selector: input[name="__RequestVerificationToken"]
+      attribute: value
+
+stats:
+  path: /
+  response:
+    type: html
+  fields:
+    uploaded:
+      selector: body
+      filters:
+        - name: regexp
+          args: 'Up\s*:\s*([0-9\s.,]+\s*(?:[KMGTPE](?:i?B|io|o)|B))'
+        - name: parsebytes
+    downloaded:
+      selector: body
+      filters:
+        - name: regexp
+          args: 'Down\s*:\s*([0-9\s.,]+\s*(?:[KMGTPE](?:i?B|io|o)|B))'
+        - name: parsebytes
+    ratio:
+      selector: body
+      optional: true
+      filters:
+        - name: regexp
+          args: 'Ratio\s*:\s*([0-9\s.,]+)'
+        - name: parsefloat

@@ -1,0 +1,52 @@
+id: hdforever
+name: HD-Forever
+description: >-
+  HD-Forever private tracker definition migrated from tracker-dashboard JSON.
+language: fr-FR
+type: private
+encoding: UTF-8
+links:
+  - https://hdf.world/
+
+settings:
+  - name: username
+    type: text
+    label: Username
+    required: true
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  method: post
+  path: /login.php
+  inputs:
+    username: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+    keeplogged: "1"
+
+stats:
+  path: /index.php
+  response:
+    type: html
+  fields:
+    uploaded:
+      selector: body
+      filters:
+        - name: regexp
+          args: 'Envoy[ée]\s*:\s*([0-9\s.,]+\s*(?:[KMGTPE](?:i?B|io|o)|B|o))'
+        - name: parsebytes
+    downloaded:
+      selector: body
+      filters:
+        - name: regexp
+          args: 'Re[çc]u\s*:\s*([0-9\s.,]+\s*(?:[KMGTPE](?:i?B|io|o)|B|o))'
+        - name: parsebytes
+    ratio:
+      selector: body
+      optional: true
+      filters:
+        - name: regexp
+          args: 'Ratio\s*:\s*([0-9][0-9\s.,]*)'
+        - name: parsefloat

@@ -1,0 +1,47 @@
+id: lacale
+name: La Cale
+description: >-
+  La Cale private tracker definition migrated from tracker-dashboard JSON.
+language: fr-FR
+type: private
+encoding: UTF-8
+links:
+  - https://la-cale.space/
+
+settings:
+  - name: username
+    type: text
+    label: Username
+    required: true
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  method: post
+  path: /login
+  inputs:
+    username: "{{ .Config.username }}"
+    email: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+
+stats:
+  path: /profile
+  response:
+    type: html
+  fields:
+    uploaded:
+      selector: body
+      filters:
+        - name: regexp
+          args: '"uploaded"\s*:\s*(\d+)'
+        - name: parsebytes
+    downloaded:
+      selector: body
+      filters:
+        - name: regexp
+          args: '"downloaded"\s*:\s*(\d+)'
+        - name: parsebytes
+    ratio:
+      text: "{{ fratio .Result.uploaded .Result.downloaded }}"

@@ -128,4 +128,4 @@ Environment variables (backend, all optional):
 
 ## Commits
 
-Commit must follow Conventional Commits format: `<type>(<scope>): <description>`. Types include `feat`, `fix`, `docs`, `refactor`, etc. Scope is optional but encouraged for clarity (e.g. `service`, `handler`, `scraper`).
+Commit must follow Conventional Commits format: `<type>(<scope>): <description>`. Types include `feat`, `fix`, `docs`, `refactor`, etc. Scope is optional but encouraged for clarity (e.g. `service`, `handler`, `scraper`). Commit must be in one line.

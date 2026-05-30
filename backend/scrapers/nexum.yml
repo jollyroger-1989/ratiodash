@@ -1,0 +1,47 @@
+id: nexum
+name: Nexum
+description: >-
+  Nexum private tracker definition migrated from tracker-dashboard JSON.
+language: fr-FR
+type: private
+encoding: UTF-8
+links:
+  - https://nexum-core.com/
+
+settings:
+  - name: username
+    type: text
+    label: Username
+    required: true
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  method: post
+  path: /login
+  inputs:
+    username: "{{ .Config.username }}"
+    email: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+
+stats:
+  path: /activity
+  response:
+    type: html
+  fields:
+    uploaded:
+      selector: .user-stat-up
+      filters:
+        - name: regexp
+          args: '([0-9][0-9\s.,]*\s*(?:[KMGTPE](?:i?B|io|o)|B|o))'
+        - name: parsebytes
+    downloaded:
+      selector: .user-stat-dn
+      filters:
+        - name: regexp
+          args: '([0-9][0-9\s.,]*\s*(?:[KMGTPE](?:i?B|io|o)|B|o))'
+        - name: parsebytes
+    ratio:
+      text: "{{ fratio .Result.uploaded .Result.downloaded }}"

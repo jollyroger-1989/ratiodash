@@ -101,12 +101,20 @@ Raw OpenAPI 3.1 spec is at **http://localhost:8080/openapi.json**
 
 ## Supported trackers
 
-| Scraper key | Tracker(s) | Auth method |
-|-------------|------------|-------------|
-| `unit3d`    | Any UNIT3D-based tracker (e.g. Generation-Free, G3mini-Tracker, The Old School, …) | API token |
-| `c411`      | C411 | Username + password |
-| `torr9`     | Torr9 | Username + password |
-| `yggreborn` | YggReborn | Username (email) + password |
+| Scraper key | Tracker(s) | Auth method | Status |
+|-------------|------------|-------------|--------|
+| `abnormal` | ABNormal | Username + password | ❌ |
+| `c411` | C411 | Username + password | ✅ |
+| `unit3d` | Any UNIT3D-based tracker (e.g. Generation-Free, G3MINI, TeamFlix, The Old School, Seedpool) | API token | ✅ |
+| `hdforever` | HD-Forever | Username + password | ❌ |
+| `hdonly` | HD-Only | Username + password | ❌ |
+| `lacale` | La Cale | Username + password | ❌ |
+| `nexum` | Nexum | Username + password | ❌ |
+| `nostradamus` | Nostradamus | Password | ❌ |
+| `torr9`     | Torr9 | Username + password | ✅ |
+| `torrentleech` | TorrentLeech | Username + password | ❌ |
+| `tr4ker` | TR4KER | Username + password | ❌ |
+| `yggreborn` | YggReborn | Username (email) + password | ✅ |
 
 To add support for a new tracker, create or update a YAML definition in `backend/scrapers/`.
 See [docs/scraper-definitions.md](docs/scraper-definitions.md) for a step-by-step guide.

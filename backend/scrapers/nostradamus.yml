@@ -1,0 +1,41 @@
+id: nostradamus
+name: Nostradamus
+description: >-
+  Nostradamus private tracker definition migrated from tracker-dashboard JSON.
+language: fr-FR
+type: private
+encoding: UTF-8
+links:
+  - https://nostradamus.foo/
+
+settings:
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  method: post
+  path: /sign-in
+  inputs:
+    password: "{{ .Config.password }}"
+
+stats:
+  path: /activity
+  response:
+    type: html
+  fields:
+    uploaded:
+      selector: body
+      filters:
+        - name: regexp
+          args: 'Upload total\s*([0-9][0-9\s.,]*\s*(?:[KMGTPE](?:i?B|io|o)|B|o))'
+        - name: parsebytes
+    downloaded:
+      selector: body
+      filters:
+        - name: regexp
+          args: 'Download total\s*([0-9][0-9\s.,]*\s*(?:[KMGTPE](?:i?B|io|o)|B|o))'
+        - name: parsebytes
+    ratio:
+      text: "{{ fratio .Result.uploaded .Result.downloaded }}"

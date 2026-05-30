@@ -1,0 +1,46 @@
+id: torrentleech
+name: TorrentLeech
+description: >-
+  TorrentLeech private tracker definition migrated from tracker-dashboard JSON.
+language: en-US
+type: private
+encoding: UTF-8
+links:
+  - https://www.torrentleech.org/
+
+settings:
+  - name: username
+    type: text
+    label: Username
+    required: true
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  method: post
+  path: /user/account/login/
+  inputs:
+    username: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+
+stats:
+  path: /
+  response:
+    type: html
+  fields:
+    uploaded:
+      selector: '[title="Uploaded (Seeding)"] span'
+      filters:
+        - name: parsebytes
+    downloaded:
+      selector: '[title="Downloaded (Leeching)"] span'
+      filters:
+        - name: parsebytes
+    ratio:
+      selector: '[title="Ratio"]'
+      filters:
+        - name: regexp
+          args: '([0-9\s.,]+)'
+        - name: parsefloat
