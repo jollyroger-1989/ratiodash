@@ -130,7 +130,7 @@ Raw OpenAPI 3.1 spec is at **http://localhost:8080/openapi.json**
 | `nostradamus` | Nostradamus | Password | ❌ |
 | `torr9`     | Torr9 | Username + password | ✅ |
 | `torrentleech` | TorrentLeech | Username + password | ❌ |
-| `tr4ker` | TR4KER | Username + password | ❌ |
+| `tr4ker` | TR4KER | API key | ✅ |
 | `yggreborn` | YggReborn | Username (email) + password | ✅ |
 
 To add support for a new tracker, create or update a YAML definition in `backend/scrapers/`.

@@ -1,7 +1,7 @@
 id: tr4ker
 name: TR4KER
 description: >-
-  TR4KER private tracker definition migrated from tracker-dashboard JSON.
+  TR4KER private tracker definition.
 language: fr-FR
 type: private
 encoding: UTF-8
@@ -9,44 +9,33 @@ links:
   - https://tr4ker.net/
 
 settings:
-  - name: username
-    type: text
-    label: Username
-    required: true
-  - name: password
+  - name: token
     type: password
-    label: Password
+    label: API Key
     required: true
-
-login:
-  method: post
-  path: /login
-  inputs:
-    username: "{{ .Config.username }}"
-    email: "{{ .Config.username }}"
-    password: "{{ .Config.password }}"
 
 stats:
-  path: /
+  path: /api/me
+  headers:
+    X-API-Key: "{{ .Config.token }}"
   response:
-    type: html
+    type: json
   fields:
-    uploaded:
-      selector: body
-      filters:
-        - name: regexp
-          args: 'UPLOAD\s*([0-9][0-9\s.,]*\s*(?:[KMGTPE](?:i?B|io|o)|B|o))'
-        - name: parsebytes
-    downloaded:
-      selector: body
-      filters:
-        - name: regexp
-          args: 'DOWNLOAD\s*([0-9][0-9\s.,]*\s*(?:[KMGTPE](?:i?B|io|o)|B|o))'
-        - name: parsebytes
-    ratio:
-      selector: body
+    _uploaded:
+      selector: uploaded
+    _bonus_uploaded:
+      selector: bonus_upload
       optional: true
-      filters:
-        - name: regexp
-          args: 'RATIO\s*:?\s*([0-9\s.,]+)'
-        - name: parsefloat
+      default: "0"
+    uploaded:
+      text: "{{ isum .Result._uploaded .Result._bonus_uploaded }}"
+    _downloaded:
+      selector: downloaded
+    _bonus_downloaded:
+      selector: bonus_download
+      optional: true
+      default: "0"
+    downloaded:
+      text: "{{ isum .Result._downloaded .Result._bonus_downloaded }}"
+    ratio:
+      text: "{{ fratio .Result.uploaded .Result.downloaded }}"
