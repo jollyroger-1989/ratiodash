@@ -19,10 +19,19 @@ type DashboardEntry struct {
 	Stats   *TrackerStats `json:"stats"`
 }
 
+// GlobalStatsPoint is an aggregated snapshot across trackers for a day.
+type GlobalStatsPoint struct {
+	FetchedAt  time.Time `json:"fetched_at"`
+	Uploaded   int64     `json:"uploaded"`
+	Downloaded int64     `json:"downloaded"`
+	Ratio      float64   `json:"ratio"`
+}
+
 // StatsRepository is the persistence abstraction for TrackerStats.
 type StatsRepository interface {
 	FindByTrackerID(trackerID uint, limit int) ([]TrackerStats, error)
 	FindLatestByTrackerID(trackerID uint) (*TrackerStats, error)
+	FindGlobalHistory(limit int) ([]GlobalStatsPoint, error)
 	// FindLatestAll returns the most recent snapshot for every tracker.
 	FindLatestAll() ([]TrackerStats, error)
 	// FindNearestAtOrBefore returns the latest snapshot taken at or before t.
@@ -38,6 +47,7 @@ type StatsRepository interface {
 type StatsService interface {
 	GetHistory(trackerID uint, limit int) ([]TrackerStats, error)
 	GetLatest(trackerID uint) (*TrackerStats, error)
+	GetGlobalHistory(limit int) ([]GlobalStatsPoint, error)
 	// GetDashboard returns all trackers paired with their latest snapshot (nil if none yet).
 	GetDashboard() ([]DashboardEntry, error)
 	// DeleteEntry removes a single history snapshot.

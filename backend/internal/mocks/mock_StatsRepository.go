@@ -174,6 +174,64 @@ func (_c *MockStatsRepository_FindByTrackerID_Call) RunAndReturn(run func(uint, 
 	return _c
 }
 
+// FindGlobalHistory provides a mock function with given fields: limit
+func (_m *MockStatsRepository) FindGlobalHistory(limit int) ([]domain.GlobalStatsPoint, error) {
+	ret := _m.Called(limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindGlobalHistory")
+	}
+
+	var r0 []domain.GlobalStatsPoint
+	var r1 error
+	if rf, ok := ret.Get(0).(func(int) ([]domain.GlobalStatsPoint, error)); ok {
+		return rf(limit)
+	}
+	if rf, ok := ret.Get(0).(func(int) []domain.GlobalStatsPoint); ok {
+		r0 = rf(limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.GlobalStatsPoint)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(int) error); ok {
+		r1 = rf(limit)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockStatsRepository_FindGlobalHistory_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindGlobalHistory'
+type MockStatsRepository_FindGlobalHistory_Call struct {
+	*mock.Call
+}
+
+// FindGlobalHistory is a helper method to define mock.On call
+//   - limit int
+func (_e *MockStatsRepository_Expecter) FindGlobalHistory(limit interface{}) *MockStatsRepository_FindGlobalHistory_Call {
+	return &MockStatsRepository_FindGlobalHistory_Call{Call: _e.mock.On("FindGlobalHistory", limit)}
+}
+
+func (_c *MockStatsRepository_FindGlobalHistory_Call) Run(run func(limit int)) *MockStatsRepository_FindGlobalHistory_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(int))
+	})
+	return _c
+}
+
+func (_c *MockStatsRepository_FindGlobalHistory_Call) Return(_a0 []domain.GlobalStatsPoint, _a1 error) *MockStatsRepository_FindGlobalHistory_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockStatsRepository_FindGlobalHistory_Call) RunAndReturn(run func(int) ([]domain.GlobalStatsPoint, error)) *MockStatsRepository_FindGlobalHistory_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindLatestAll provides a mock function with no fields
 func (_m *MockStatsRepository) FindLatestAll() ([]domain.TrackerStats, error) {
 	ret := _m.Called()

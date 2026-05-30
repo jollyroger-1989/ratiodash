@@ -180,6 +180,63 @@ func TestStatsRepository_FindLatestAll(t *testing.T) {
 	})
 }
 
+func TestStatsRepository_FindGlobalHistory(t *testing.T) {
+	t.Run("returns empty slice when no stats exist", func(t *testing.T) {
+		repo := repository.NewStatsRepository(testutil.NewDB(t))
+
+		points, err := repo.FindGlobalHistory(0)
+
+		require.NoError(t, err)
+		assert.Equal(t, []domain.GlobalStatsPoint{}, points)
+	})
+
+	t.Run("aggregates latest snapshot per tracker per day", func(t *testing.T) {
+		db := testutil.NewDB(t)
+		repo := repository.NewStatsRepository(db)
+		tr1 := seedTracker(t, db, "Alpha")
+		tr2 := seedTracker(t, db, "Beta")
+
+		day1 := time.Date(2026, 5, 28, 0, 0, 0, 0, time.UTC)
+		day2 := time.Date(2026, 5, 29, 0, 0, 0, 0, time.UTC)
+
+		require.NoError(t, repo.Create(&domain.TrackerStats{TrackerID: tr1.ID, Uploaded: 100, Downloaded: 50, Ratio: 2, FetchedAt: day1.Add(8 * time.Hour)}))
+		require.NoError(t, repo.Create(&domain.TrackerStats{TrackerID: tr1.ID, Uploaded: 150, Downloaded: 75, Ratio: 2, FetchedAt: day1.Add(20 * time.Hour)}))
+		require.NoError(t, repo.Create(&domain.TrackerStats{TrackerID: tr2.ID, Uploaded: 200, Downloaded: 100, Ratio: 2, FetchedAt: day1.Add(10 * time.Hour)}))
+		require.NoError(t, repo.Create(&domain.TrackerStats{TrackerID: tr1.ID, Uploaded: 300, Downloaded: 100, Ratio: 3, FetchedAt: day2.Add(9 * time.Hour)}))
+
+		points, err := repo.FindGlobalHistory(0)
+
+		require.NoError(t, err)
+		require.Len(t, points, 2)
+		assert.Equal(t, day2, points[0].FetchedAt)
+		assert.Equal(t, int64(300), points[0].Uploaded)
+		assert.Equal(t, int64(100), points[0].Downloaded)
+		assert.Equal(t, 3.0, points[0].Ratio)
+		assert.Equal(t, day1, points[1].FetchedAt)
+		assert.Equal(t, int64(350), points[1].Uploaded)
+		assert.Equal(t, int64(175), points[1].Downloaded)
+		assert.Equal(t, 2.0, points[1].Ratio)
+	})
+
+	t.Run("respects limit", func(t *testing.T) {
+		db := testutil.NewDB(t)
+		repo := repository.NewStatsRepository(db)
+		tr := seedTracker(t, db, "Alpha")
+
+		for i := 0; i < 3; i++ {
+			day := time.Date(2026, 5, 27+i, 0, 0, 0, 0, time.UTC)
+			require.NoError(t, repo.Create(&domain.TrackerStats{TrackerID: tr.ID, Uploaded: int64((i + 1) * 100), Downloaded: int64((i + 1) * 50), Ratio: 2, FetchedAt: day.Add(12 * time.Hour)}))
+		}
+
+		points, err := repo.FindGlobalHistory(2)
+
+		require.NoError(t, err)
+		require.Len(t, points, 2)
+		assert.Equal(t, time.Date(2026, 5, 29, 0, 0, 0, 0, time.UTC), points[0].FetchedAt)
+		assert.Equal(t, time.Date(2026, 5, 28, 0, 0, 0, 0, time.UTC), points[1].FetchedAt)
+	})
+}
+
 func TestStatsRepository_Create(t *testing.T) {
 	t.Run("assigns ID on success", func(t *testing.T) {
 		db := testutil.NewDB(t)

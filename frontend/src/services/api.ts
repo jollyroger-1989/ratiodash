@@ -86,6 +86,13 @@ export interface TrackerStats {
   fetched_at: string
 }
 
+export interface GlobalStatsPoint {
+  uploaded: number
+  downloaded: number
+  ratio: number
+  fetched_at: string
+}
+
 export interface DashboardEntry {
   tracker: Tracker
   stats: TrackerStats | null
@@ -140,6 +147,11 @@ export const statsApi = {
 
   getLatest(trackerId: number): Promise<TrackerStats> {
     return http.get<TrackerStats>(`/trackers/${trackerId}/stats/latest`).then((r) => r.data)
+  },
+
+  getGlobalHistory(limit?: number): Promise<GlobalStatsPoint[]> {
+    const params = typeof limit === 'number' ? { limit } : undefined
+    return http.get<GlobalStatsPoint[]>('/stats/global', { params }).then((r) => r.data)
   },
 
   deleteEntry(trackerId: number, statId: number): Promise<void> {

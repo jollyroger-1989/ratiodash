@@ -54,6 +54,63 @@ func (r *statsRepository) FindLatestAll() ([]domain.TrackerStats, error) {
 	return stats, nil
 }
 
+func (r *statsRepository) FindGlobalHistory(limit int) ([]domain.GlobalStatsPoint, error) {
+	type row struct {
+		Day        string `gorm:"column:day"`
+		Uploaded   int64  `gorm:"column:uploaded"`
+		Downloaded int64  `gorm:"column:downloaded"`
+	}
+
+	query := r.db.Table(`
+(
+	SELECT day, SUM(uploaded) AS uploaded, SUM(downloaded) AS downloaded
+	FROM (
+		SELECT
+			tracker_id,
+			date(fetched_at) AS day,
+			uploaded,
+			downloaded,
+			ROW_NUMBER() OVER (
+				PARTITION BY tracker_id, date(fetched_at)
+				ORDER BY fetched_at DESC, id DESC
+			) AS rn
+		FROM tracker_stats
+	) latest
+	WHERE rn = 1
+	GROUP BY day
+)
+AS daily_totals`).Select("day, uploaded, downloaded").Order("day DESC")
+
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+
+	var rows []row
+	if err := query.Find(&rows).Error; err != nil {
+		return nil, fmt.Errorf("finding global stats history: %w", err)
+	}
+
+	points := make([]domain.GlobalStatsPoint, len(rows))
+	for i := range rows {
+		day, err := time.Parse("2006-01-02", rows[i].Day)
+		if err != nil {
+			return nil, fmt.Errorf("parsing global stats day %q: %w", rows[i].Day, err)
+		}
+		ratio := 0.0
+		if rows[i].Downloaded > 0 {
+			ratio = float64(rows[i].Uploaded) / float64(rows[i].Downloaded)
+		}
+		points[i] = domain.GlobalStatsPoint{
+			FetchedAt:  day.UTC(),
+			Uploaded:   rows[i].Uploaded,
+			Downloaded: rows[i].Downloaded,
+			Ratio:      ratio,
+		}
+	}
+
+	return points, nil
+}
+
 func (r *statsRepository) Create(s *domain.TrackerStats) error {
 	if err := r.db.Create(s).Error; err != nil {
 		return fmt.Errorf("creating stats: %w", err)

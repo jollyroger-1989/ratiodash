@@ -33,6 +33,13 @@ type GetTrackerHistoryOutput struct {
 	Body []domain.TrackerStats
 }
 
+type GetGlobalHistoryInput struct {
+	Limit int `query:"limit" doc:"Maximum number of daily snapshots to return"`
+}
+type GetGlobalHistoryOutput struct {
+	Body []domain.GlobalStatsPoint
+}
+
 type GetLatestStatsInput struct {
 	TrackerID uint `path:"tracker_id"`
 }
@@ -60,6 +67,14 @@ func (h *StatsHandler) GetTrackerHistory(ctx context.Context, input *GetTrackerH
 		return nil, huma.Error500InternalServerError("failed to load history")
 	}
 	return &GetTrackerHistoryOutput{Body: stats}, nil
+}
+
+func (h *StatsHandler) GetGlobalHistory(ctx context.Context, input *GetGlobalHistoryInput) (*GetGlobalHistoryOutput, error) {
+	stats, err := h.service.GetGlobalHistory(input.Limit)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to load global history")
+	}
+	return &GetGlobalHistoryOutput{Body: stats}, nil
 }
 
 func (h *StatsHandler) GetLatestStats(ctx context.Context, input *GetLatestStatsInput) (*GetLatestStatsOutput, error) {
@@ -104,6 +119,14 @@ func RegisterStatsRoutes(api huma.API, h *StatsHandler) {
 		Summary:     "Historical stats for a tracker",
 		Tags:        []string{"stats"},
 	}, h.GetTrackerHistory)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "get-global-history",
+		Method:      http.MethodGet,
+		Path:        prefix + "/stats/global",
+		Summary:     "Daily aggregated stats across all trackers",
+		Tags:        []string{"stats"},
+	}, h.GetGlobalHistory)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-latest-stats",

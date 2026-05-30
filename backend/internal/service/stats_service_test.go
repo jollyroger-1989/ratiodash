@@ -74,6 +74,31 @@ func TestStatsService_GetLatest(t *testing.T) {
 	})
 }
 
+func TestStatsService_GetGlobalHistory(t *testing.T) {
+	t.Run("returns aggregated points", func(t *testing.T) {
+		statsRepo := mocks.NewMockStatsRepository(t)
+		trackerRepo := mocks.NewMockTrackerRepository(t)
+		statsRepo.EXPECT().FindGlobalHistory(30).Return([]domain.GlobalStatsPoint{
+			{Uploaded: 100, Downloaded: 50, Ratio: 2},
+		}, nil)
+
+		points, err := service.NewStatsService(statsRepo, trackerRepo).GetGlobalHistory(30)
+
+		require.NoError(t, err)
+		assert.Len(t, points, 1)
+	})
+
+	t.Run("propagates repository error", func(t *testing.T) {
+		statsRepo := mocks.NewMockStatsRepository(t)
+		trackerRepo := mocks.NewMockTrackerRepository(t)
+		statsRepo.EXPECT().FindGlobalHistory(30).Return(nil, errors.New("db error"))
+
+		_, err := service.NewStatsService(statsRepo, trackerRepo).GetGlobalHistory(30)
+
+		assert.Error(t, err)
+	})
+}
+
 func TestStatsService_DeleteEntry(t *testing.T) {
 	t.Run("deletes entry", func(t *testing.T) {
 		statsRepo := mocks.NewMockStatsRepository(t)

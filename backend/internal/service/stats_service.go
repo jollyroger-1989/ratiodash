@@ -19,6 +19,10 @@ func (s *statsService) GetLatest(trackerID uint) (*domain.TrackerStats, error) {
 	return s.repo.FindLatestByTrackerID(trackerID)
 }
 
+func (s *statsService) GetGlobalHistory(limit int) ([]domain.GlobalStatsPoint, error) {
+	return s.repo.FindGlobalHistory(limit)
+}
+
 func (s *statsService) DeleteEntry(statID uint, trackerID uint) error {
 	return s.repo.Delete(statID, trackerID)
 }
