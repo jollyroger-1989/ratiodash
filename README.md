@@ -6,6 +6,7 @@ A self-hosted dashboard for tracking your upload/download ratio across multiple 
 
 ## Summary
 
+- [Features](#features)
 - [Stack](#stack)
 - [Prerequisites](#prerequisites)
 - [Getting started](#getting-started)
@@ -15,6 +16,18 @@ A self-hosted dashboard for tracking your upload/download ratio across multiple 
 - [Adding a new resource](#adding-a-new-resource)
 - [Environment variables](#environment-variables)
 - [AI agents](#ai-agents)
+
+## Features
+
+- Unified dashboard to monitor upload, download, and ratio across multiple trackers
+- Automatic periodic refresh so your tracker stats stay up to date without manual checks
+- Add and manage tracker accounts from a single interface
+- Quick visibility into tracker health and scrape status to spot issues early
+- Historical snapshots to follow ratio trends over time
+- On-demand reports to review tracker performance in a concise, shareable format
+- Configurable alerts for key ratio and tracker conditions so you can act quickly
+- Self-hosted deployment so your credentials and data stay under your control
+- Fast first-time setup with a built-in onboarding flow
 
 > [!WARNING]
 > **Code quality notice**
