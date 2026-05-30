@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +18,7 @@ import (
 	"github.com/jose/ratiodash/internal/domain"
 )
 
-const yggRebornBaseURL = "https://www.yggreborn.org"
+const yggRebornDefaultURL = "https://www.yggreborn.org"
 
 // YggRebornScraper fetches ratio stats from yggreborn.org.
 //
@@ -30,9 +31,17 @@ const yggRebornBaseURL = "https://www.yggreborn.org"
 // Credentials JSON:
 //
 //	{"username": "<email>", "password": "<password>"}
-type YggRebornScraper struct{}
+type YggRebornScraper struct {
+	baseURL string
+}
 
-func NewYggRebornScraper() *YggRebornScraper { return &YggRebornScraper{} }
+func NewYggRebornScraper() *YggRebornScraper {
+	u := os.Getenv("YGGREBORN_URL")
+	if u == "" {
+		u = yggRebornDefaultURL
+	}
+	return &YggRebornScraper{baseURL: u}
+}
 
 func (s *YggRebornScraper) Key() string { return "yggreborn" }
 
@@ -65,16 +74,16 @@ func (s *YggRebornScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*
 		},
 	}
 
-	csrfToken, err := yggRebornGetCSRF(ctx, client)
+	csrfToken, err := yggRebornGetCSRF(ctx, client, s.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("yggreborn: %w", err)
 	}
 
-	if err := yggRebornLogin(ctx, client, creds.Username, creds.Password, csrfToken); err != nil {
+	if err := yggRebornLogin(ctx, client, creds.Username, creds.Password, csrfToken, s.baseURL); err != nil {
 		return nil, fmt.Errorf("yggreborn: %w", err)
 	}
 
-	uploaded, downloaded, ratio, err := yggRebornFetchStats(ctx, client)
+	uploaded, downloaded, ratio, err := yggRebornFetchStats(ctx, client, s.baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("yggreborn: %w", err)
 	}
@@ -88,8 +97,8 @@ func (s *YggRebornScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*
 
 // yggRebornGetCSRF performs a GET on the login page and extracts the hidden
 // csrf_token field value.
-func yggRebornGetCSRF(ctx context.Context, client *http.Client) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, yggRebornBaseURL+"/login", nil)
+func yggRebornGetCSRF(ctx context.Context, client *http.Client, baseURL string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/login", nil)
 	if err != nil {
 		return "", fmt.Errorf("building login-page request: %w", err)
 	}
@@ -141,7 +150,7 @@ func yggRebornExtractCSRF(body []byte) (string, error) {
 
 // yggRebornLogin posts the login form and expects an HTTP 302 redirect on
 // success.
-func yggRebornLogin(ctx context.Context, client *http.Client, identifier, password, csrfToken string) error {
+func yggRebornLogin(ctx context.Context, client *http.Client, identifier, password, csrfToken, baseURL string) error {
 	form := url.Values{}
 	form.Set("csrf_token", csrfToken)
 	form.Set("identifier", identifier)
@@ -149,7 +158,7 @@ func yggRebornLogin(ctx context.Context, client *http.Client, identifier, passwo
 
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodPost,
-		yggRebornBaseURL+"/login",
+		baseURL+"/login",
 		strings.NewReader(form.Encode()),
 	)
 	if err != nil {
@@ -180,8 +189,8 @@ func yggRebornLogin(ctx context.Context, client *http.Client, identifier, passwo
 }
 
 // yggRebornFetchStats fetches /account/ and parses the stats grid.
-func yggRebornFetchStats(ctx context.Context, client *http.Client) (uploaded, downloaded int64, ratio float64, err error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, yggRebornBaseURL+"/account/", nil)
+func yggRebornFetchStats(ctx context.Context, client *http.Client, baseURL string) (uploaded, downloaded int64, ratio float64, err error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/account/", nil)
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("building account request: %w", err)
 	}
