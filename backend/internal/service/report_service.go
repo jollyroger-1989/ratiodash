@@ -217,11 +217,11 @@ func buildReportBody(
 		globalCur := &domain.TrackerStats{Uploaded: totalUploaded, Downloaded: totalDownloaded, Ratio: globalRatio}
 
 		sb.WriteString("🌐 Global\n")
-		sb.WriteString(fmt.Sprintf("  ⬆️  Upload:   %s%s\n",
+		sb.WriteString(fmt.Sprintf("  ⬆️  UP: %s%s\n",
 			formatBytes(totalUploaded), formatDelta(globalBase, globalCur, fieldUploaded)))
-		sb.WriteString(fmt.Sprintf("  ⬇️  Download: %s%s\n",
+		sb.WriteString(fmt.Sprintf("  ⬇️  DL: %s%s\n",
 			formatBytes(totalDownloaded), formatDelta(globalBase, globalCur, fieldDownloaded)))
-		sb.WriteString(fmt.Sprintf("  %s Ratio:    %.2f%s\n", ratioEmoji(globalRatio), globalRatio, formatRatio(globalRatio, globalBase, globalCur)))
+		sb.WriteString(fmt.Sprintf("  %s Ratio: %.2f%s\n", ratioEmoji(globalRatio), globalRatio, formatRatio(globalRatio, globalBase, globalCur)))
 		sb.WriteString("\n")
 	}
 
@@ -235,13 +235,13 @@ func buildReportBody(
 		base := baseline[t.ID]
 
 		sb.WriteString(fmt.Sprintf("📡 %s\n", t.Name))
-		sb.WriteString(fmt.Sprintf("  ⬆️  Upload:   %s%s\n",
+		sb.WriteString(fmt.Sprintf("  ⬆️  UP: %s%s\n",
 			formatBytes(cur.Uploaded), formatDelta(base, cur, fieldUploaded)))
-		sb.WriteString(fmt.Sprintf("  ⬇️  Download: %s%s\n",
+		sb.WriteString(fmt.Sprintf("  ⬇️  DL: %s%s\n",
 			formatBytes(cur.Downloaded), formatDelta(base, cur, fieldDownloaded)))
 
 		ratioLine := formatRatio(cur.Ratio, base, cur)
-		sb.WriteString(fmt.Sprintf("  %s Ratio:    %.2f%s\n", ratioEmoji(cur.Ratio), cur.Ratio, ratioLine))
+		sb.WriteString(fmt.Sprintf("  %s Ratio: %.2f%s\n", ratioEmoji(cur.Ratio), cur.Ratio, ratioLine))
 		sb.WriteString("\n")
 	}
 
