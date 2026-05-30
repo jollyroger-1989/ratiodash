@@ -85,6 +85,11 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 
 	if ys.def.Login != nil {
 		if err := ys.doLogin(ctx, client, sitelink, ys.def.Login, tctx); err != nil {
+			ys.logger().WithError(err).WithFields(logrus.Fields{
+				"tracker_id":   tracker.ID,
+				"tracker_name": tracker.Name,
+				"sitelink":     sitelink,
+			}).Warn("scraper_login_failed")
 			return nil, fmt.Errorf("%s: login: %w", ys.def.ID, err)
 		}
 		ys.logger().Info("scraper_login_successful")
@@ -92,6 +97,11 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 
 	stats, err := ys.doStats(ctx, client, sitelink, tctx)
 	if err != nil {
+		ys.logger().WithError(err).WithFields(logrus.Fields{
+			"tracker_id":   tracker.ID,
+			"tracker_name": tracker.Name,
+			"sitelink":     sitelink,
+		}).Warn("scraper_stats_fetch_failed")
 		return nil, fmt.Errorf("%s: %w", ys.def.ID, err)
 	}
 	return stats, nil
@@ -135,7 +145,17 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 	for k, sf := range login.SelectorInputs {
 		val, err := extractHTML(pageBody, Field{Selector: sf.Selector, Attribute: sf.Attribute, Optional: true})
 		if err != nil {
+			ys.logger().WithError(err).WithFields(logrus.Fields{
+				"selectorinput": k,
+				"selector":      sf.Selector,
+			}).Warn("scraper_login_selectorinput_extract_failed")
 			return fmt.Errorf("selectorinputs[%s]: %w", k, err)
+		}
+		if strings.TrimSpace(val) == "" {
+			ys.logger().WithFields(logrus.Fields{
+				"selectorinput": k,
+				"selector":      sf.Selector,
+			}).Warn("scraper_login_selectorinput_empty")
 		}
 		extraInputs[k] = val
 	}
@@ -144,6 +164,10 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 	for k, sf := range login.SelectorHeaders {
 		val, err := extractHTML(pageBody, Field{Selector: sf.Selector, Attribute: sf.Attribute})
 		if err != nil {
+			ys.logger().WithError(err).WithFields(logrus.Fields{
+				"selectorheader": k,
+				"selector":       sf.Selector,
+			}).Warn("scraper_login_selectorheader_extract_failed")
 			return fmt.Errorf("selectorheaders[%s]: %w", k, err)
 		}
 		extraHeaders[k] = val
@@ -210,6 +234,10 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 		return nil
 	}
 	if resp.StatusCode >= 400 {
+		ys.logger().WithFields(logrus.Fields{
+			"url":    submitURL,
+			"status": resp.StatusCode,
+		}).Warn("scraper_login_http_failed")
 		return fmt.Errorf("login request returned HTTP %d", resp.StatusCode)
 	}
 
@@ -218,7 +246,15 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 		return err
 	}
 
-	return ys.checkLoginErrors(login, respBody)
+	if err := ys.checkLoginErrors(login, respBody); err != nil {
+		ys.logger().WithError(err).WithFields(logrus.Fields{
+			"url":    submitURL,
+			"status": resp.StatusCode,
+		}).Warn("scraper_login_validation_failed")
+		return err
+	}
+
+	return nil
 }
 
 // doJSONLogin POSTs a JSON body and extracts captures from the JSON response.
@@ -259,6 +295,10 @@ func (ys *YAMLScraper) doJSONLogin(ctx context.Context, client *http.Client, sit
 	}).Debug("scraper_json_login_response")
 
 	if resp.StatusCode >= 400 {
+		ys.logger().WithFields(logrus.Fields{
+			"url":    loginURL,
+			"status": resp.StatusCode,
+		}).Warn("scraper_login_http_failed")
 		return fmt.Errorf("login request returned HTTP %d", resp.StatusCode)
 	}
 
@@ -268,6 +308,10 @@ func (ys *YAMLScraper) doJSONLogin(ctx context.Context, client *http.Client, sit
 	}
 
 	if err := ys.checkLoginErrors(login, respBody); err != nil {
+		ys.logger().WithError(err).WithFields(logrus.Fields{
+			"url":    loginURL,
+			"status": resp.StatusCode,
+		}).Warn("scraper_login_validation_failed")
 		return err
 	}
 
@@ -310,6 +354,10 @@ func (ys *YAMLScraper) doPostLogin(ctx context.Context, client *http.Client, sit
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
+		ys.logger().WithFields(logrus.Fields{
+			"url":    loginURL,
+			"status": resp.StatusCode,
+		}).Warn("scraper_login_http_failed")
 		return fmt.Errorf("login request returned HTTP %d", resp.StatusCode)
 	}
 
@@ -318,7 +366,15 @@ func (ys *YAMLScraper) doPostLogin(ctx context.Context, client *http.Client, sit
 		return err
 	}
 
-	return ys.checkLoginErrors(login, respBody)
+	if err := ys.checkLoginErrors(login, respBody); err != nil {
+		ys.logger().WithError(err).WithFields(logrus.Fields{
+			"url":    loginURL,
+			"status": resp.StatusCode,
+		}).Warn("scraper_login_validation_failed")
+		return err
+	}
+
+	return nil
 }
 
 // checkLoginErrors inspects the login response body for error indicators.
@@ -331,11 +387,16 @@ func (ys *YAMLScraper) checkLoginErrors(login *LoginDef, body []byte) error {
 		if responseIsJSON {
 			val := gjson.GetBytes(body, errDef.Selector)
 			if errDef.Value != "" && val.String() == errDef.Value {
+				ys.logger().WithFields(logrus.Fields{
+					"selector": errDef.Selector,
+					"value":    errDef.Value,
+				}).Warn("scraper_login_error_indicator_matched")
 				return fmt.Errorf("authentication failed")
 			}
 		} else {
 			match, _ := extractHTML(body, Field{Selector: errDef.Selector, Optional: true})
 			if match != "" {
+				ys.logger().WithField("selector", errDef.Selector).Warn("scraper_login_error_indicator_matched")
 				return fmt.Errorf("authentication failed: error indicator %q found on login page", errDef.Selector)
 			}
 		}

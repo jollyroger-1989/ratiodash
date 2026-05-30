@@ -262,14 +262,18 @@ func TestYAMLScraper_YggReborn(t *testing.T) {
 				http.Redirect(w, r, "/", http.StatusFound)
 			}
 		case "/account/":
-			// Wrap all stat divs in a shared container, matching the real site structure.
-			// This causes div:has(...) to match both the outer container AND the
-			// individual stat divs; match:last ensures the innermost element is used.
+			// The page includes another card with an "Uploads" label. Selectors must
+			// stay scoped to the tracker stats card and not parse this as upload bytes.
 			w.Write([]byte(`<html><body>
-				<div>
+				<div class="hero-card">
+					<h3>Statistiques Tracker</h3>
 					<div><div>2.00 Go</div><div class="mt-1">Upload</div></div>
 					<div><div>1.00 Go</div><div class="mt-1">Download</div></div>
 					<div><div>2.0</div><div class="mt-1">Ratio</div></div>
+				</div>
+				<div class="hero-card">
+					<h3>Statut Uploader</h3>
+					<div><div>0</div><div class="mt-1">Uploads</div></div>
 				</div>
 			</body></html>`))
 		default:
@@ -301,17 +305,17 @@ stats:
     type: html
   fields:
     uploaded:
-      selector: 'div:has(div.mt-1:contains("Upload")) > div:first-child'
+      selector: 'div.hero-card:has(h3:contains("Statistiques Tracker")) div:has(div.mt-1:contains("Upload")) > div:first-child'
       match: last
       filters:
         - name: parsebytes
     downloaded:
-      selector: 'div:has(div.mt-1:contains("Download")) > div:first-child'
+      selector: 'div.hero-card:has(h3:contains("Statistiques Tracker")) div:has(div.mt-1:contains("Download")) > div:first-child'
       match: last
       filters:
         - name: parsebytes
     ratio:
-      selector: 'div:has(div.mt-1:contains("Ratio")) > div:first-child'
+      selector: 'div.hero-card:has(h3:contains("Statistiques Tracker")) div:has(div.mt-1:contains("Ratio")) > div:first-child'
       match: last
       filters:
         - name: parsefloat
