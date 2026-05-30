@@ -183,6 +183,48 @@ func buildReportBody(
 		sb.WriteString("First report — no previous baseline\n\n")
 	}
 
+	// Global aggregate section.
+	var totalUploaded, totalDownloaded int64
+	var baseUploaded, baseDownloaded int64
+	hasData := false
+	hasBaseline := false
+	for _, t := range trackers {
+		if cur := latest[t.ID]; cur != nil {
+			totalUploaded += cur.Uploaded
+			totalDownloaded += cur.Downloaded
+			hasData = true
+		}
+		if base := baseline[t.ID]; base != nil {
+			baseUploaded += base.Uploaded
+			baseDownloaded += base.Downloaded
+			hasBaseline = true
+		}
+	}
+	if hasData {
+		var globalRatio float64
+		if totalDownloaded > 0 {
+			globalRatio = float64(totalUploaded) / float64(totalDownloaded)
+		}
+		var baseRatio float64
+		if hasBaseline && baseDownloaded > 0 {
+			baseRatio = float64(baseUploaded) / float64(baseDownloaded)
+		}
+
+		var globalBase *domain.TrackerStats
+		if hasBaseline {
+			globalBase = &domain.TrackerStats{Uploaded: baseUploaded, Downloaded: baseDownloaded, Ratio: baseRatio}
+		}
+		globalCur := &domain.TrackerStats{Uploaded: totalUploaded, Downloaded: totalDownloaded, Ratio: globalRatio}
+
+		sb.WriteString("🌐 Global\n")
+		sb.WriteString(fmt.Sprintf("  ⬆️  Upload:   %s%s\n",
+			formatBytes(totalUploaded), formatDelta(globalBase, globalCur, fieldUploaded)))
+		sb.WriteString(fmt.Sprintf("  ⬇️  Download: %s%s\n",
+			formatBytes(totalDownloaded), formatDelta(globalBase, globalCur, fieldDownloaded)))
+		sb.WriteString(fmt.Sprintf("  %s Ratio:    %.2f%s\n", ratioEmoji(globalRatio), globalRatio, formatRatio(globalRatio, globalBase, globalCur)))
+		sb.WriteString("\n")
+	}
+
 	for _, t := range trackers {
 		cur := latest[t.ID]
 		if cur == nil {
@@ -226,19 +268,15 @@ func formatDelta(base, cur *domain.TrackerStats, f field) string {
 		delta = cur.Downloaded - base.Downloaded
 	}
 	if delta == 0 {
-		return " (→ no change)"
+		return " (➡️ no change)"
 	}
-	arrow := "↑"
+	arrow := "⬆️"
 	absD := delta
 	if delta < 0 {
-		arrow = "↓"
+		arrow = "⬇️"
 		absD = -delta
 	}
-	sign := "+"
-	if delta < 0 {
-		sign = "-"
-	}
-	return fmt.Sprintf(" (%s%s %s)", sign, formatBytes(absD), arrow)
+	return fmt.Sprintf(" (%s %s)", arrow, formatBytes(absD))
 }
 
 func formatRatio(cur float64, base, _ *domain.TrackerStats) string {
@@ -247,17 +285,14 @@ func formatRatio(cur float64, base, _ *domain.TrackerStats) string {
 	}
 	delta := cur - base.Ratio
 	if math.Abs(delta) < 0.005 {
-		return " (→ no change)"
+		return " (➡️ no change)"
 	}
-	arrow := "↑"
+	arrow := "⬆️"
 	if delta < 0 {
-		arrow = "↓"
+		arrow = "⬇️"
+		delta = -delta
 	}
-	sign := "+"
-	if delta < 0 {
-		sign = ""
-	}
-	return fmt.Sprintf(" (%s%.2f %s)", sign, delta, arrow)
+	return fmt.Sprintf(" (%s %.2f)", arrow, delta)
 }
 
 func ratioEmoji(ratio float64) string {
