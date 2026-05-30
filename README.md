@@ -4,6 +4,18 @@ A self-hosted dashboard for tracking your upload/download ratio across multiple 
 
 ![Home](docs/screenshots/home.png)
 
+## Summary
+
+- [Stack](#stack)
+- [Prerequisites](#prerequisites)
+- [Getting started](#getting-started)
+- [API docs](#api-docs)
+- [Supported trackers](#supported-trackers)
+- [Project structure](#project-structure)
+- [Adding a new resource](#adding-a-new-resource)
+- [Environment variables](#environment-variables)
+- [AI agents](#ai-agents)
+
 > [!WARNING]
 > **Code quality notice**
 >
