@@ -31,21 +31,21 @@ type AlertConfig struct {
 type CreateAlertConfigInput struct {
 	Name              string  `json:"name"               required:"true" minLength:"1" doc:"Human-readable alert name"`
 	AlertType         string  `json:"alert_type"         required:"true"              doc:"Alert type: ratio_alert or sync_error"`
-	Enabled           bool    `json:"enabled"                                         doc:"Whether the alert is active"`
-	RatioThreshold    float64 `json:"ratio_threshold"                                 doc:"Ratio threshold for ratio_alert (default 1.5)"`
-	AllTrackers       bool    `json:"all_trackers"                                    doc:"If true, applies to all trackers"`
-	TrackerIDs        []uint  `json:"tracker_ids"                                     doc:"Specific tracker IDs (used when all_trackers is false)"`
-	NotifierConfigIDs []uint  `json:"notifier_config_ids"                             doc:"IDs of notifier configs to deliver the alert to"`
+	Enabled           bool    `json:"enabled,omitempty"                               doc:"Whether the alert is active"`
+	RatioThreshold    float64 `json:"ratio_threshold,omitempty"                       doc:"Ratio threshold for ratio_alert (default 1.5)"`
+	AllTrackers       bool    `json:"all_trackers,omitempty"                          doc:"If true, applies to all trackers"`
+	TrackerIDs        []uint  `json:"tracker_ids,omitempty"                           doc:"Specific tracker IDs (used when all_trackers is false)"`
+	NotifierConfigIDs []uint  `json:"notifier_config_ids,omitempty"                   doc:"IDs of notifier configs to deliver the alert to"`
 }
 
 // UpdateAlertConfigInput holds the optional fields for patching an alert config.
 type UpdateAlertConfigInput struct {
-	Name              *string  `json:"name"`
-	Enabled           *bool    `json:"enabled"`
-	RatioThreshold    *float64 `json:"ratio_threshold"`
-	AllTrackers       *bool    `json:"all_trackers"`
-	TrackerIDs        *[]uint  `json:"tracker_ids"`
-	NotifierConfigIDs *[]uint  `json:"notifier_config_ids"`
+	Name              *string  `json:"name,omitempty"`
+	Enabled           *bool    `json:"enabled,omitempty"`
+	RatioThreshold    *float64 `json:"ratio_threshold,omitempty"`
+	AllTrackers       *bool    `json:"all_trackers,omitempty"`
+	TrackerIDs        *[]uint  `json:"tracker_ids,omitempty"`
+	NotifierConfigIDs *[]uint  `json:"notifier_config_ids,omitempty"`
 }
 
 // AlertConfigRepository is the persistence abstraction for AlertConfig.
