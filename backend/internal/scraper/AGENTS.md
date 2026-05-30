@@ -116,7 +116,7 @@ Credentials are parsed from tracker JSON into a string map.
 
 ## Logging
 
-Use stdlib `log.Printf` (not logrus) with scraper id prefix:
+Use `logrus` with a `scraper` field:
 
 - `scraper <id>: fetching stats ...`
 - `scraper <id>: GET/POST ...`

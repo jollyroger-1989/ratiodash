@@ -3,10 +3,10 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/robfig/cron/v3"
+	"github.com/sirupsen/logrus"
 	"go.uber.org/fx"
 
 	"github.com/jose/ratiodash/internal/domain"
@@ -53,7 +53,10 @@ func (s *Scheduler) Schedule(tracker domain.Tracker) error {
 
 	id, err := s.cron.AddFunc(tracker.CronExpr, func() {
 		if err := s.refresh.RefreshTracker(context.Background(), tracker.ID); err != nil {
-			log.Printf("scheduler: tracker %d (%s): %v", tracker.ID, tracker.Name, err)
+			logrus.WithError(err).WithFields(logrus.Fields{
+				"tracker_id":   tracker.ID,
+				"tracker_name": tracker.Name,
+			}).Error("scheduler_refresh_tracker_failed")
 		}
 	})
 	if err != nil {
@@ -86,7 +89,10 @@ func (s *Scheduler) ScheduleReport(report domain.Report) error {
 
 	id, err := s.cron.AddFunc(report.CronExpr, func() {
 		if err := s.reports.Send(context.Background(), report.ID); err != nil {
-			log.Printf("scheduler: report %d (%s): %v", report.ID, report.Name, err)
+			logrus.WithError(err).WithFields(logrus.Fields{
+				"report_id":   report.ID,
+				"report_name": report.Name,
+			}).Error("scheduler_send_report_failed")
 		}
 	})
 	if err != nil {
@@ -119,7 +125,10 @@ func Start(lc fx.Lifecycle, s *Scheduler) {
 			}
 			for _, tracker := range trackers {
 				if err := s.Schedule(tracker); err != nil {
-					log.Printf("scheduler: skipping tracker %q: %v", tracker.Name, err)
+					logrus.WithError(err).WithFields(logrus.Fields{
+						"tracker_id":   tracker.ID,
+						"tracker_name": tracker.Name,
+					}).Warn("scheduler_skip_tracker")
 				}
 			}
 
@@ -129,12 +138,18 @@ func Start(lc fx.Lifecycle, s *Scheduler) {
 			}
 			for _, report := range reports {
 				if err := s.ScheduleReport(report); err != nil {
-					log.Printf("scheduler: skipping report %q: %v", report.Name, err)
+					logrus.WithError(err).WithFields(logrus.Fields{
+						"report_id":   report.ID,
+						"report_name": report.Name,
+					}).Warn("scheduler_skip_report")
 				}
 			}
 
 			s.cron.Start()
-			log.Printf("scheduler: started with %d tracker(s) and %d report(s)", len(trackers), len(reports))
+			logrus.WithFields(logrus.Fields{
+				"trackers": len(trackers),
+				"reports":  len(reports),
+			}).Info("scheduler_started")
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {

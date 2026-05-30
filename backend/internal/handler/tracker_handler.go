@@ -3,10 +3,10 @@ package handler
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/sirupsen/logrus"
 
 	"github.com/jose/ratiodash/internal/domain"
 )
@@ -100,7 +100,7 @@ func (h *TrackerHandler) CreateTracker(ctx context.Context, input *CreateTracker
 		return nil, huma.Error422UnprocessableEntity("scrape failed — check the tracker URL and credentials")
 	}
 	if err := h.refresher.Schedule(*tracker); err != nil {
-		log.Printf("handler: schedule tracker %d: %v", tracker.ID, err)
+		logrus.WithError(err).WithField("tracker_id", tracker.ID).Warn("handler_schedule_tracker_failed")
 	}
 	return &CreateTrackerOutput{Body: tracker}, nil
 }
@@ -127,7 +127,7 @@ func (h *TrackerHandler) UpdateTracker(ctx context.Context, input *UpdateTracker
 		return nil, huma.Error422UnprocessableEntity("scrape failed — check the tracker URL and credentials")
 	}
 	if err := h.refresher.Schedule(*tracker); err != nil {
-		log.Printf("handler: reschedule tracker %d: %v", tracker.ID, err)
+		logrus.WithError(err).WithField("tracker_id", tracker.ID).Warn("handler_reschedule_tracker_failed")
 	}
 	return &UpdateTrackerOutput{Body: tracker}, nil
 }

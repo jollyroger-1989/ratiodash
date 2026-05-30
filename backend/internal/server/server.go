@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -15,11 +14,32 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
+	"github.com/sirupsen/logrus"
 	"go.uber.org/fx"
 
 	"github.com/jose/ratiodash/internal/domain"
 	"github.com/jose/ratiodash/pkg/config"
 )
+
+func requestLoggerMiddleware() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+			started := time.Now()
+
+			next.ServeHTTP(ww, r)
+
+			logrus.WithFields(logrus.Fields{
+				"request_id":  middleware.GetReqID(r.Context()),
+				"method":      r.Method,
+				"path":        r.URL.Path,
+				"status":      ww.Status(),
+				"duration_ms": time.Since(started).Milliseconds(),
+				"ip":          r.RemoteAddr,
+			}).Info("http_request")
+		})
+	}
+}
 
 // authRateLimitMiddleware limits requests to /api/v1/auth/* to 10 per minute
 // per IP address to mitigate brute-force attacks.
@@ -85,7 +105,7 @@ func NewRouter(cfg *config.Config, auth domain.AuthService) (*chi.Mux, huma.API)
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
-	router.Use(middleware.Logger)
+	router.Use(requestLoggerMiddleware())
 	router.Use(middleware.Recoverer)
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins: cfg.AllowedOrigins,
@@ -150,11 +170,11 @@ func Start(lc fx.Lifecycle, router *chi.Mux, cfg *config.Config) {
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			log.Printf("Server listening on %s", cfg.ServerAddr)
-			log.Printf("API docs:  http://%s/docs", cfg.ServerAddr)
+			logrus.WithField("addr", cfg.ServerAddr).Info("server_listening")
+			logrus.WithField("docs", fmt.Sprintf("http://%s/docs", cfg.ServerAddr)).Info("api_docs")
 			go func() {
 				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					log.Printf("server error: %v", err)
+					logrus.WithError(err).Error("server_error")
 				}
 			}()
 			return nil

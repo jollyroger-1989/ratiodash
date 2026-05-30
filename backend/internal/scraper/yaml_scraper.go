@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -14,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 
 	"github.com/jose/ratiodash/internal/domain"
@@ -22,6 +22,10 @@ import (
 // YAMLScraper implements domain.TrackerScraper from a YAML definition file.
 type YAMLScraper struct {
 	def Definition
+}
+
+func (ys *YAMLScraper) logger() *logrus.Entry {
+	return logrus.WithField("scraper", ys.def.ID)
 }
 
 // Key returns the scraper's unique identifier (the definition's id field).
@@ -43,7 +47,10 @@ func (ys *YAMLScraper) CredentialFields() []domain.CredentialField {
 
 // Fetch retrieves upload/download/ratio statistics for the given tracker.
 func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*domain.TrackerStats, error) {
-	log.Printf("scraper %s: fetching stats for tracker %d (%s)", ys.def.ID, tracker.ID, tracker.Name)
+	ys.logger().WithFields(logrus.Fields{
+		"tracker_id":   tracker.ID,
+		"tracker_name": tracker.Name,
+	}).Info("scraper_fetching_stats")
 	creds, err := parseCredMap(tracker.Credentials)
 	if err != nil {
 		return nil, fmt.Errorf("%s: parsing credentials: %w", ys.def.ID, err)
@@ -80,7 +87,7 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 		if err := ys.doLogin(ctx, client, sitelink, ys.def.Login, tctx); err != nil {
 			return nil, fmt.Errorf("%s: login: %w", ys.def.ID, err)
 		}
-		log.Printf("scraper %s: login successful", ys.def.ID)
+		ys.logger().Info("scraper_login_successful")
 	}
 
 	stats, err := ys.doStats(ctx, client, sitelink, tctx)
@@ -118,7 +125,7 @@ func (ys *YAMLScraper) doLogin(ctx context.Context, client *http.Client, sitelin
 func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sitelink string, login *LoginDef, tctx *TemplateContext) error {
 	loginURL := joinURL(sitelink, login.Path)
 
-	log.Printf("scraper %s: GET %s (login page)", ys.def.ID, loginURL)
+	ys.logger().WithField("url", loginURL).Debug("scraper_login_page_get")
 	pageBody, err := ys.doGet(ctx, client, loginURL, nil)
 	if err != nil {
 		return fmt.Errorf("fetching login page: %w", err)
@@ -193,7 +200,10 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 	}
 	defer resp.Body.Close()
 
-	log.Printf("scraper %s: POST %s (login submit) → %d", ys.def.ID, submitURL, resp.StatusCode)
+	ys.logger().WithFields(logrus.Fields{
+		"url":    submitURL,
+		"status": resp.StatusCode,
+	}).Debug("scraper_login_submit_response")
 
 	// A redirect means login succeeded — the server is directing us elsewhere.
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
@@ -215,7 +225,7 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 // This is the correct method for API-first trackers like Torr9.
 func (ys *YAMLScraper) doJSONLogin(ctx context.Context, client *http.Client, sitelink string, login *LoginDef, tctx *TemplateContext) error {
 	loginURL := joinURL(sitelink, login.Path)
-	log.Printf("scraper %s: POST %s (JSON login)", ys.def.ID, loginURL)
+	ys.logger().WithField("url", loginURL).Debug("scraper_json_login_post")
 
 	body := make(map[string]interface{})
 	for k, v := range login.Inputs {
@@ -243,7 +253,10 @@ func (ys *YAMLScraper) doJSONLogin(ctx context.Context, client *http.Client, sit
 	}
 	defer resp.Body.Close()
 
-	log.Printf("scraper %s: POST %s (JSON login) → %d", ys.def.ID, loginURL, resp.StatusCode)
+	ys.logger().WithFields(logrus.Fields{
+		"url":    loginURL,
+		"status": resp.StatusCode,
+	}).Debug("scraper_json_login_response")
 
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("login request returned HTTP %d", resp.StatusCode)
@@ -263,7 +276,7 @@ func (ys *YAMLScraper) doJSONLogin(ctx context.Context, client *http.Client, sit
 		result := gjson.GetBytes(respBody, sf.Selector)
 		if result.Exists() {
 			tctx.Captures[k] = result.String()
-			log.Printf("scraper %s: captured %q", ys.def.ID, k)
+			ys.logger().WithField("capture", k).Debug("scraper_capture_stored")
 		}
 	}
 
@@ -273,7 +286,7 @@ func (ys *YAMLScraper) doJSONLogin(ctx context.Context, client *http.Client, sit
 // doPostLogin POSTs form-encoded data without a preceding GET.
 func (ys *YAMLScraper) doPostLogin(ctx context.Context, client *http.Client, sitelink string, login *LoginDef, tctx *TemplateContext) error {
 	loginURL := joinURL(sitelink, login.Path)
-	log.Printf("scraper %s: POST %s (login)", ys.def.ID, loginURL)
+	ys.logger().WithField("url", loginURL).Debug("scraper_form_login_post")
 
 	form := url.Values{}
 	for k, v := range login.Inputs {
@@ -352,7 +365,7 @@ func (ys *YAMLScraper) doStats(ctx context.Context, client *http.Client, sitelin
 		headers[k] = rendered
 	}
 
-	log.Printf("scraper %s: GET %s (stats)", ys.def.ID, statsURL)
+	ys.logger().WithField("url", statsURL).Debug("scraper_stats_get")
 	body, err := ys.doGet(ctx, client, statsURL, headers)
 	if err != nil {
 		return nil, err
@@ -419,7 +432,11 @@ func (ys *YAMLScraper) doStats(ctx context.Context, client *http.Client, sitelin
 		ratio = float64(uploaded) / float64(downloaded)
 	}
 
-	log.Printf("scraper %s: stats → uploaded=%d downloaded=%d ratio=%.4f", ys.def.ID, uploaded, downloaded, ratio)
+	ys.logger().WithFields(logrus.Fields{
+		"uploaded":   uploaded,
+		"downloaded": downloaded,
+		"ratio":      ratio,
+	}).Info("scraper_stats_parsed")
 	return &domain.TrackerStats{
 		Uploaded:   uploaded,
 		Downloaded: downloaded,

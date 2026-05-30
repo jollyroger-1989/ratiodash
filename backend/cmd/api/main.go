@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/jose/ratiodash/internal/handler"
 	"github.com/jose/ratiodash/internal/notifier"
 	"github.com/jose/ratiodash/internal/repository"
@@ -11,10 +15,29 @@ import (
 	"github.com/jose/ratiodash/pkg/config"
 	"github.com/jose/ratiodash/pkg/database"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 )
 
+func configureLogger() {
+	logrus.SetOutput(os.Stdout)
+	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+
+	level := logrus.InfoLevel
+	if raw := os.Getenv("LOG_LEVEL"); raw != "" {
+		if parsed, err := logrus.ParseLevel(raw); err == nil {
+			level = parsed
+		}
+	}
+	logrus.SetLevel(level)
+}
+
 func main() {
+	configureLogger()
+
 	fx.New(
+		fx.WithLogger(func() fxevent.Logger {
+			return &fxLogrusLogger{}
+		}),
 		config.Module,
 		database.Module,
 		repository.Module,

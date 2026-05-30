@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
+	"github.com/sirupsen/logrus"
 	"go.uber.org/fx"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -14,6 +15,16 @@ import (
 	"github.com/jose/ratiodash/migrations"
 	"github.com/jose/ratiodash/pkg/config"
 )
+
+type gooseLogrusLogger struct{}
+
+func (gooseLogrusLogger) Printf(format string, v ...any) {
+	logrus.WithField("component", "goose").Infof(format, v...)
+}
+
+func (gooseLogrusLogger) Fatalf(format string, v ...any) {
+	logrus.WithField("component", "goose").Fatalf(format, v...)
+}
 
 // New opens the SQLite database, runs any pending migrations, then returns a
 // configured *gorm.DB for use throughout the application.
@@ -41,6 +52,7 @@ func runMigrations(dsn string) error {
 	defer db.Close()
 
 	goose.SetBaseFS(migrations.FS)
+	goose.SetLogger(gooseLogrusLogger{})
 
 	if err := goose.SetDialect("sqlite3"); err != nil {
 		return fmt.Errorf("setting dialect: %w", err)
