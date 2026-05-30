@@ -75,12 +75,12 @@ func TestAlertConfigService_Create(t *testing.T) {
 	t.Run("defaults threshold to 1.5 when <= 0", func(t *testing.T) {
 		repo := mocks.NewMockAlertConfigRepository(t)
 		input := domain.CreateAlertConfigInput{
-			Name:               "Zero threshold",
-			AlertType:          domain.AlertTypeRatioAlert,
-			Enabled:            true,
-			RatioThreshold:     0,
-			AllTrackers:        true,
-			NotifierConfigIDs:  []uint{},
+			Name:              "Zero threshold",
+			AlertType:         domain.AlertTypeRatioAlert,
+			Enabled:           true,
+			RatioThreshold:    0,
+			AllTrackers:       true,
+			NotifierConfigIDs: []uint{},
 		}
 		repo.EXPECT().Create(mock.MatchedBy(func(c *domain.AlertConfig) bool {
 			return c.RatioThreshold == 1.5

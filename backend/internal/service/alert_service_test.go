@@ -293,9 +293,9 @@ func TestAlertService_HandleRatioAlert(t *testing.T) {
 		builder := mocks.NewMockNotifierBuilder(t)
 
 		cfg1 := domain.AlertConfig{
-			ID:             1,
-			AlertType:      domain.AlertTypeSyncError,
-			AllTrackers:    true,
+			ID:          1,
+			AlertType:   domain.AlertTypeSyncError,
+			AllTrackers: true,
 		}
 		cfg2 := domain.AlertConfig{
 			ID:             2,
