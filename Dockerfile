@@ -3,6 +3,8 @@ FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
+RUN npm install -g npm@11
+
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
