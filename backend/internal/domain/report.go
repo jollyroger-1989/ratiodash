@@ -21,14 +21,14 @@ type Report struct {
 type CreateReportInput struct {
 	Name              string `json:"name"               required:"true" minLength:"1" doc:"Human-readable report name"`
 	CronExpr          string `json:"cron_expr"          required:"true" minLength:"1" doc:"Cron schedule expression"`
-	NotifierConfigIDs []uint `json:"notifier_config_ids"                              doc:"IDs of notifier configs to deliver the report to"`
+	NotifierConfigIDs []uint `json:"notifier_config_ids,omitempty"                    doc:"IDs of notifier configs to deliver the report to"`
 }
 
 // UpdateReportInput holds the optional fields for patching a report.
 type UpdateReportInput struct {
-	Name              *string `json:"name"`
-	CronExpr          *string `json:"cron_expr"`
-	NotifierConfigIDs *[]uint `json:"notifier_config_ids"`
+	Name              *string `json:"name,omitempty"`
+	CronExpr          *string `json:"cron_expr,omitempty"`
+	NotifierConfigIDs *[]uint `json:"notifier_config_ids,omitempty"`
 }
 
 // ReportRepository is the persistence abstraction for Report.
