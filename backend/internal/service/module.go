@@ -6,9 +6,9 @@ var Module = fx.Options(
 	fx.Provide(NewTrackerService),
 	fx.Provide(NewStatsService),
 	fx.Provide(NewAlertConfigService),
-	fx.Provide(NewAlertService),
+	fx.Provide(NewAlertServiceWithAuthRepo),
 	fx.Provide(NewRefreshService),
 	fx.Provide(NewAuthService),
 	fx.Provide(NewNotifierConfigService),
-	fx.Provide(NewReportService),
+	fx.Provide(NewReportServiceWithAuthRepo),
 )

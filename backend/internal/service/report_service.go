@@ -16,6 +16,7 @@ type reportService struct {
 	trackers     domain.TrackerService
 	statsRepo    domain.StatsRepository
 	builder      domain.NotifierBuilder
+	authRepo     domain.AuthRepository
 }
 
 func NewReportService(
@@ -31,6 +32,25 @@ func NewReportService(
 		trackers:     trackers,
 		statsRepo:    statsRepo,
 		builder:      builder,
+		authRepo:     nil,
+	}
+}
+
+func NewReportServiceWithAuthRepo(
+	repo domain.ReportRepository,
+	notifierRepo domain.NotifierConfigRepository,
+	trackers domain.TrackerService,
+	statsRepo domain.StatsRepository,
+	builder domain.NotifierBuilder,
+	authRepo domain.AuthRepository,
+) domain.ReportService {
+	return &reportService{
+		repo:         repo,
+		notifierRepo: notifierRepo,
+		trackers:     trackers,
+		statsRepo:    statsRepo,
+		builder:      builder,
+		authRepo:     authRepo,
 	}
 }
 
@@ -98,6 +118,8 @@ func (s *reportService) Delete(id uint) error {
 
 // Send generates and dispatches a report to all configured notifiers.
 func (s *reportService) Send(ctx context.Context, id uint) error {
+	loc := newNotificationLocalizer(notificationLanguage(s.authRepo))
+
 	r, err := s.repo.FindByID(id)
 	if err != nil {
 		return err
@@ -135,7 +157,7 @@ func (s *reportService) Send(ctx context.Context, id uint) error {
 		}
 	}
 
-	body := buildReportBody(allTrackers, latestByTracker, baselineByTracker, r.LastSentAt)
+	body := buildReportBody(allTrackers, latestByTracker, baselineByTracker, r.LastSentAt, loc)
 
 	// Send to each configured notifier.
 	var errs []string
@@ -148,7 +170,7 @@ func (s *reportService) Send(ctx context.Context, id uint) error {
 		notification := domain.Notification{
 			Event: domain.EventReport,
 			Level: domain.LevelInfo,
-			Title: fmt.Sprintf("[RatioDash] 📊 %s", r.Name),
+			Title: loc.msg("report.title", map[string]any{"ReportName": r.Name}),
 			Body:  body,
 			Tags:  []string{"report"},
 		}
@@ -174,13 +196,18 @@ func buildReportBody(
 	latest map[uint]*domain.TrackerStats,
 	baseline map[uint]*domain.TrackerStats,
 	lastSentAt *time.Time,
+	loc notificationLocalizer,
 ) string {
 	var sb strings.Builder
 
 	if lastSentAt != nil {
-		sb.WriteString(fmt.Sprintf("Evolution since %s\n\n", lastSentAt.UTC().Format("2006-01-02 15:04 UTC")))
+		sb.WriteString(loc.msg("report.body.evolution_since", map[string]any{
+			"Timestamp": loc.formatTimestamp(*lastSentAt),
+		}))
+		sb.WriteString("\n\n")
 	} else {
-		sb.WriteString("First report — no previous baseline\n\n")
+		sb.WriteString(loc.msg("report.body.first_report", nil))
+		sb.WriteString("\n\n")
 	}
 
 	// Global aggregate section.
@@ -216,36 +243,40 @@ func buildReportBody(
 		}
 		globalCur := &domain.TrackerStats{Uploaded: totalUploaded, Downloaded: totalDownloaded, Ratio: globalRatio}
 
-		sb.WriteString("🌐 Global\n")
-		sb.WriteString(fmt.Sprintf("  ⬆️  UP: %s%s\n",
-			formatBytes(totalUploaded), formatDelta(globalBase, globalCur, fieldUploaded)))
-		sb.WriteString(fmt.Sprintf("  ⬇️  DL: %s%s\n",
-			formatBytes(totalDownloaded), formatDelta(globalBase, globalCur, fieldDownloaded)))
-		sb.WriteString(fmt.Sprintf("  %s Ratio: %.2f%s\n", ratioEmoji(globalRatio), globalRatio, formatRatio(globalRatio, globalBase, globalCur)))
+		sb.WriteString(fmt.Sprintf("🌐 %s\n", loc.msg("report.body.global", nil)))
+		sb.WriteString(fmt.Sprintf("  ⬆️  %s: %s%s\n",
+			loc.msg("report.body.up_label", nil), formatBytes(totalUploaded), formatDelta(globalBase, globalCur, fieldUploaded, loc)))
+		sb.WriteString(fmt.Sprintf("  ⬇️  %s: %s%s\n",
+			loc.msg("report.body.dl_label", nil), formatBytes(totalDownloaded), formatDelta(globalBase, globalCur, fieldDownloaded, loc)))
+		sb.WriteString(fmt.Sprintf("  %s %s: %.2f%s\n",
+			ratioEmoji(globalRatio), loc.msg("report.body.ratio_label", nil), globalRatio, formatRatio(globalRatio, globalBase, loc)))
 		sb.WriteString("\n")
 	}
 
 	for _, t := range trackers {
 		cur := latest[t.ID]
 		if cur == nil {
-			sb.WriteString(fmt.Sprintf("📡 %s\n  ❓ No data yet\n\n", t.Name))
+			sb.WriteString(fmt.Sprintf("📡 %s\n  ❓ %s\n\n", t.Name, loc.msg("report.body.no_data_yet", nil)))
 			continue
 		}
 
 		base := baseline[t.ID]
 
 		sb.WriteString(fmt.Sprintf("📡 %s\n", t.Name))
-		sb.WriteString(fmt.Sprintf("  ⬆️  UP: %s%s\n",
-			formatBytes(cur.Uploaded), formatDelta(base, cur, fieldUploaded)))
-		sb.WriteString(fmt.Sprintf("  ⬇️  DL: %s%s\n",
-			formatBytes(cur.Downloaded), formatDelta(base, cur, fieldDownloaded)))
+		sb.WriteString(fmt.Sprintf("  ⬆️  %s: %s%s\n",
+			loc.msg("report.body.up_label", nil), formatBytes(cur.Uploaded), formatDelta(base, cur, fieldUploaded, loc)))
+		sb.WriteString(fmt.Sprintf("  ⬇️  %s: %s%s\n",
+			loc.msg("report.body.dl_label", nil), formatBytes(cur.Downloaded), formatDelta(base, cur, fieldDownloaded, loc)))
 
-		ratioLine := formatRatio(cur.Ratio, base, cur)
-		sb.WriteString(fmt.Sprintf("  %s Ratio: %.2f%s\n", ratioEmoji(cur.Ratio), cur.Ratio, ratioLine))
+		ratioLine := formatRatio(cur.Ratio, base, loc)
+		sb.WriteString(fmt.Sprintf("  %s %s: %.2f%s\n", ratioEmoji(cur.Ratio), loc.msg("report.body.ratio_label", nil), cur.Ratio, ratioLine))
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString(fmt.Sprintf("🕐 Generated at %s", time.Now().UTC().Format("2006-01-02 15:04 UTC")))
+	sb.WriteString("🕐 ")
+	sb.WriteString(loc.msg("report.body.generated_at", map[string]any{
+		"Timestamp": loc.formatTimestamp(time.Now()),
+	}))
 	return sb.String()
 }
 
@@ -256,7 +287,7 @@ const (
 	fieldDownloaded
 )
 
-func formatDelta(base, cur *domain.TrackerStats, f field) string {
+func formatDelta(base, cur *domain.TrackerStats, f field, loc notificationLocalizer) string {
 	if base == nil {
 		return ""
 	}
@@ -268,7 +299,7 @@ func formatDelta(base, cur *domain.TrackerStats, f field) string {
 		delta = cur.Downloaded - base.Downloaded
 	}
 	if delta == 0 {
-		return " (➡️ no change)"
+		return fmt.Sprintf(" (➡️ %s)", loc.msg("report.body.no_change", nil))
 	}
 	arrow := "⬆️"
 	absD := delta
@@ -279,13 +310,13 @@ func formatDelta(base, cur *domain.TrackerStats, f field) string {
 	return fmt.Sprintf(" (%s %s)", arrow, formatBytes(absD))
 }
 
-func formatRatio(cur float64, base, _ *domain.TrackerStats) string {
+func formatRatio(cur float64, base *domain.TrackerStats, loc notificationLocalizer) string {
 	if base == nil {
 		return ""
 	}
 	delta := cur - base.Ratio
 	if math.Abs(delta) < 0.005 {
-		return " (➡️ no change)"
+		return fmt.Sprintf(" (➡️ %s)", loc.msg("report.body.no_change", nil))
 	}
 	arrow := "⬆️"
 	if delta < 0 {
