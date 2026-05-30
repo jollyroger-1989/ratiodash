@@ -37,16 +37,17 @@ func RedactCredentials(raw string) map[string]string {
 
 // Tracker represents a registered torrent tracker whose stats are being tracked.
 type Tracker struct {
-	ID            uint       `json:"id"                  gorm:"primaryKey"`
-	Name          string     `json:"name"                gorm:"uniqueIndex;not null"`
-	ScraperKey    string     `json:"scraper_key"         gorm:"not null"`
-	Credentials   string     `json:"-"                   gorm:"not null;default:'{}'"`
-	CronExpr      string     `json:"cron_expr"           gorm:"not null;default:'@hourly'"`
-	Active        bool       `json:"active"              gorm:"not null;default:true"`
-	LastError     string     `json:"last_error"          gorm:"not null;default:''"`
-	LastScrapedAt *time.Time `json:"last_scraped_at"     gorm:"default:null"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID            uint          `json:"id"                  gorm:"primaryKey"`
+	Name          string        `json:"name"                gorm:"uniqueIndex;not null"`
+	ScraperKey    string        `json:"scraper_key"         gorm:"not null"`
+	Credentials   string        `json:"-"                   gorm:"not null;default:'{}'"`
+	CronExpr      string        `json:"cron_expr"           gorm:"not null;default:'@hourly'"`
+	Active        bool          `json:"active"              gorm:"not null;default:true"`
+	LastError     string        `json:"last_error"          gorm:"not null;default:''"`
+	LastScrapedAt *time.Time    `json:"last_scraped_at"     gorm:"default:null"`
+	CreatedAt     time.Time     `json:"created_at"`
+	UpdatedAt     time.Time     `json:"updated_at"`
+	Stats         *TrackerStats `json:"stats"               gorm:"-"`
 	// PublicCredentials contains non-sensitive credential fields (e.g. "url").
 	// It is computed at query time and never persisted.
 	PublicCredentials map[string]string `json:"public_credentials,omitempty" gorm:"-"`

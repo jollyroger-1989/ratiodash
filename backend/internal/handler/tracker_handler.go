@@ -14,12 +14,13 @@ import (
 // TrackerHandler holds the HTTP handlers for Tracker CRUD and manual refresh.
 type TrackerHandler struct {
 	service   domain.TrackerService
+	stats     domain.StatsService
 	refresh   domain.RefreshService
 	refresher domain.Refresher
 }
 
-func NewTrackerHandler(svc domain.TrackerService, refresh domain.RefreshService, r domain.Refresher) *TrackerHandler {
-	return &TrackerHandler{service: svc, refresh: refresh, refresher: r}
+func NewTrackerHandler(svc domain.TrackerService, stats domain.StatsService, refresh domain.RefreshService, r domain.Refresher) *TrackerHandler {
+	return &TrackerHandler{service: svc, stats: stats, refresh: refresh, refresher: r}
 }
 
 // --- I/O types ---
@@ -78,6 +79,21 @@ func (h *TrackerHandler) ListTrackers(ctx context.Context, _ *struct{}) (*ListTr
 	trackers, err := h.service.GetAll()
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to list trackers")
+	}
+	dashboard, err := h.stats.GetDashboard()
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to list trackers")
+	}
+
+	latestByTrackerID := make(map[uint]*domain.TrackerStats, len(dashboard))
+	for i := range dashboard {
+		if dashboard[i].Stats != nil {
+			latestByTrackerID[dashboard[i].Tracker.ID] = dashboard[i].Stats
+		}
+	}
+
+	for i := range trackers {
+		trackers[i].Stats = latestByTrackerID[trackers[i].ID]
 	}
 	return &ListTrackersOutput{Body: trackers}, nil
 }

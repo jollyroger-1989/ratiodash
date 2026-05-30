@@ -55,6 +55,7 @@ export interface Tracker {
   last_scraped_at: string | null
   created_at: string
   updated_at: string
+  stats?: TrackerStats | null
   public_credentials?: Record<string, string>
 }
 

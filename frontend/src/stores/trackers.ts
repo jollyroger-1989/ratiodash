@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
   trackersApi,
-  statsApi,
   type Tracker,
   type CreateTrackerInput,
   type UpdateTrackerInput,
@@ -31,7 +30,11 @@ export const useTrackersStore = defineStore('trackers', () => {
     loading.value = true
     error.value = null
     try {
-      dashboard.value = await statsApi.getDashboard()
+      const allTrackers = await trackersApi.getAll()
+      dashboard.value = allTrackers.map((tracker) => ({
+        tracker,
+        stats: tracker.stats ?? null
+      }))
     } catch {
       error.value = 'Failed to load dashboard.'
     } finally {

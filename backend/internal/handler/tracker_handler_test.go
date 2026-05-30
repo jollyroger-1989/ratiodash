@@ -23,20 +23,23 @@ type trackerTestEnv struct {
 	api     humatest.TestAPI
 	refresh *mocks.MockRefreshService
 	sched   *mocks.MockRefresher
+	stats   domain.StatsRepository
 }
 
 func setupTrackerHandler(t *testing.T) trackerTestEnv {
 	t.Helper()
 	db := testutil.NewDB(t)
 	repo := repository.NewTrackerRepository(db)
+	statsRepo := repository.NewStatsRepository(db)
 	registry := mocks.NewMockScraperRegistry(t)
 	svc := service.NewTrackerService(repo, registry)
+	statsSvc := service.NewStatsService(statsRepo, repo)
 	refresh := mocks.NewMockRefreshService(t)
 	sched := mocks.NewMockRefresher(t)
-	h := handler.NewTrackerHandler(svc, refresh, sched)
+	h := handler.NewTrackerHandler(svc, statsSvc, refresh, sched)
 	api := testutil.NewAPI(t)
 	handler.RegisterTrackerRoutes(api, h)
-	return trackerTestEnv{api: api, refresh: refresh, sched: sched}
+	return trackerTestEnv{api: api, refresh: refresh, sched: sched, stats: statsRepo}
 }
 
 func TestTrackerHandler_List(t *testing.T) {
@@ -55,8 +58,14 @@ func TestTrackerHandler_List(t *testing.T) {
 		env := setupTrackerHandler(t)
 		env.refresh.EXPECT().RefreshTracker(mock.Anything, mock.AnythingOfType("uint")).Return(nil)
 		env.sched.EXPECT().Schedule(mock.AnythingOfType("domain.Tracker")).Return(nil)
-		env.api.Do(http.MethodPost, "/api/v1/trackers",
+		createResp := env.api.Do(http.MethodPost, "/api/v1/trackers",
 			map[string]string{"name": "Alpha", "scraper_key": "generic", "credentials": "{}", "cron_expr": "@hourly"})
+		require.Equal(t, http.StatusCreated, createResp.Code)
+
+		var created domain.Tracker
+		require.NoError(t, json.NewDecoder(createResp.Body).Decode(&created))
+		err := env.stats.Create(&domain.TrackerStats{TrackerID: created.ID, Uploaded: 42, Downloaded: 21, Ratio: 2.0})
+		require.NoError(t, err)
 
 		resp := env.api.Do(http.MethodGet, "/api/v1/trackers")
 
@@ -65,6 +74,10 @@ func TestTrackerHandler_List(t *testing.T) {
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 		require.Len(t, body, 1)
 		assert.Equal(t, "Alpha", body[0].Name)
+		require.NotNil(t, body[0].Stats)
+		assert.Equal(t, int64(42), body[0].Stats.Uploaded)
+		assert.Equal(t, int64(21), body[0].Stats.Downloaded)
+		assert.Equal(t, 2.0, body[0].Stats.Ratio)
 	})
 }
 
@@ -240,7 +253,9 @@ type trackerTestEnvWithMock struct {
 func setupTrackerHandlerWithMock(t *testing.T) trackerTestEnvWithMock {
 	t.Helper()
 	svc := mocks.NewMockTrackerService(t)
-	h := handler.NewTrackerHandler(svc, mocks.NewMockRefreshService(t), mocks.NewMockRefresher(t))
+	stats := mocks.NewMockStatsService(t)
+	stats.EXPECT().GetDashboard().Return([]domain.DashboardEntry{}, nil).Maybe()
+	h := handler.NewTrackerHandler(svc, stats, mocks.NewMockRefreshService(t), mocks.NewMockRefresher(t))
 	api := testutil.NewAPI(t)
 	handler.RegisterTrackerRoutes(api, h)
 	return trackerTestEnvWithMock{api: api, service: svc}
