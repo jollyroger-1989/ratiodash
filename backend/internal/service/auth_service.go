@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -128,4 +129,34 @@ func (s *authService) UpdateCredentials(currentPassword, newUsername, newPasswor
 		return fmt.Errorf("hashing password: %w", err)
 	}
 	return s.repo.Update(cred.ID, newUsername, string(hash))
+}
+
+func normalizeLanguage(language string) string {
+	normalized := strings.ToLower(strings.TrimSpace(language))
+	if normalized == "fr" {
+		return "fr"
+	}
+	return "en"
+}
+
+func (s *authService) GetLanguage() (string, error) {
+	cred, err := s.repo.Find()
+	if err != nil {
+		return "", err
+	}
+	if cred == nil {
+		return "en", nil
+	}
+	return normalizeLanguage(cred.Language), nil
+}
+
+func (s *authService) UpdateLanguage(language string) error {
+	cred, err := s.repo.Find()
+	if err != nil {
+		return err
+	}
+	if cred == nil {
+		return errors.New("not configured")
+	}
+	return s.repo.UpdateLanguage(cred.ID, normalizeLanguage(language))
 }

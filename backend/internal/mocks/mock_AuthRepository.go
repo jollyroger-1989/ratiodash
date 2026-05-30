@@ -185,6 +185,53 @@ func (_c *MockAuthRepository_Update_Call) RunAndReturn(run func(uint, string, st
 	return _c
 }
 
+// UpdateLanguage provides a mock function with given fields: id, language
+func (_m *MockAuthRepository) UpdateLanguage(id uint, language string) error {
+	ret := _m.Called(id, language)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateLanguage")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint, string) error); ok {
+		r0 = rf(id, language)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockAuthRepository_UpdateLanguage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateLanguage'
+type MockAuthRepository_UpdateLanguage_Call struct {
+	*mock.Call
+}
+
+// UpdateLanguage is a helper method to define mock.On call
+//   - id uint
+//   - language string
+func (_e *MockAuthRepository_Expecter) UpdateLanguage(id interface{}, language interface{}) *MockAuthRepository_UpdateLanguage_Call {
+	return &MockAuthRepository_UpdateLanguage_Call{Call: _e.mock.On("UpdateLanguage", id, language)}
+}
+
+func (_c *MockAuthRepository_UpdateLanguage_Call) Run(run func(id uint, language string)) *MockAuthRepository_UpdateLanguage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(uint), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockAuthRepository_UpdateLanguage_Call) Return(_a0 error) *MockAuthRepository_UpdateLanguage_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockAuthRepository_UpdateLanguage_Call) RunAndReturn(run func(uint, string) error) *MockAuthRepository_UpdateLanguage_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockAuthRepository creates a new instance of MockAuthRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockAuthRepository(t interface {

@@ -48,6 +48,18 @@ type UpdateCredentialsInput struct {
 	}
 }
 
+type SettingsLanguageOutput struct {
+	Body struct {
+		Language string `json:"language" enum:"en,fr"`
+	}
+}
+
+type UpdateSettingsLanguageInput struct {
+	Body struct {
+		Language string `json:"language" required:"true" enum:"en,fr"`
+	}
+}
+
 // --- Handlers ---
 
 // Status reports whether credentials have been set up.
@@ -99,6 +111,26 @@ func (h *AuthHandler) UpdateCredentials(_ context.Context, input *UpdateCredenti
 	return nil, nil
 }
 
+func (h *AuthHandler) GetLanguage(_ context.Context, _ *struct{}) (*SettingsLanguageOutput, error) {
+	language, err := h.service.GetLanguage()
+	if err != nil {
+		return nil, huma.Error500InternalServerError("failed to fetch language setting")
+	}
+	out := &SettingsLanguageOutput{}
+	out.Body.Language = language
+	return out, nil
+}
+
+func (h *AuthHandler) UpdateLanguage(_ context.Context, input *UpdateSettingsLanguageInput) (*struct{}, error) {
+	if err := h.service.UpdateLanguage(input.Body.Language); err != nil {
+		if err.Error() == "not configured" {
+			return nil, huma.NewError(http.StatusConflict, "credentials not configured")
+		}
+		return nil, huma.Error500InternalServerError("failed to update language setting")
+	}
+	return nil, nil
+}
+
 // RegisterAuthRoutes mounts all auth endpoints on the Huma API.
 func RegisterAuthRoutes(api huma.API, h *AuthHandler) {
 	huma.Register(api, huma.Operation{
@@ -135,4 +167,20 @@ func RegisterAuthRoutes(api huma.API, h *AuthHandler) {
 		Summary:     "Update the admin username and/or password",
 		Tags:        []string{"settings"},
 	}, h.UpdateCredentials)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "get-settings-language",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/settings/language",
+		Summary:     "Get the persisted UI language",
+		Tags:        []string{"settings"},
+	}, h.GetLanguage)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "update-settings-language",
+		Method:      http.MethodPatch,
+		Path:        "/api/v1/settings/language",
+		Summary:     "Update the persisted UI language",
+		Tags:        []string{"settings"},
+	}, h.UpdateLanguage)
 }

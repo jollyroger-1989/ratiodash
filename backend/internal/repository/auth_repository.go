@@ -35,6 +35,7 @@ func (r *authRepository) Create(username, passwordHash, jwtSecret string) (*doma
 		Username:     username,
 		PasswordHash: passwordHash,
 		JWTSecret:    jwtSecret,
+		Language:     "en",
 	}
 	if err := r.db.Create(cred).Error; err != nil {
 		return nil, fmt.Errorf("creating app credential: %w", err)
@@ -46,6 +47,14 @@ func (r *authRepository) Update(id uint, username, passwordHash string) error {
 	if err := r.db.Model(&domain.AppCredential{}).Where("id = ?", id).
 		Updates(map[string]any{"username": username, "password_hash": passwordHash}).Error; err != nil {
 		return fmt.Errorf("updating app credential: %w", err)
+	}
+	return nil
+}
+
+func (r *authRepository) UpdateLanguage(id uint, language string) error {
+	if err := r.db.Model(&domain.AppCredential{}).Where("id = ?", id).
+		Update("language", language).Error; err != nil {
+		return fmt.Errorf("updating app credential language: %w", err)
 	}
 	return nil
 }

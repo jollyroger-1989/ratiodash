@@ -32,6 +32,7 @@ func TestAuthRepository_Find(t *testing.T) {
 		assert.Equal(t, "admin", cred.Username)
 		assert.Equal(t, "hash", cred.PasswordHash)
 		assert.Equal(t, "secret", cred.JWTSecret)
+		assert.Equal(t, "en", cred.Language)
 	})
 
 	t.Run("returns error on database failure", func(t *testing.T) {
@@ -108,6 +109,33 @@ func TestAuthRepository_Update(t *testing.T) {
 		repo := repository.NewAuthRepository(db)
 
 		err = repo.Update(1, "admin", "hash")
+
+		assert.Error(t, err)
+	})
+}
+
+func TestAuthRepository_UpdateLanguage(t *testing.T) {
+	t.Run("persists language", func(t *testing.T) {
+		repo := repository.NewAuthRepository(testutil.NewDB(t))
+		created, err := repo.Create("admin", "hash", "secret")
+		require.NoError(t, err)
+
+		require.NoError(t, repo.UpdateLanguage(created.ID, "fr"))
+
+		cred, err := repo.Find()
+		require.NoError(t, err)
+		require.NotNil(t, cred)
+		assert.Equal(t, "fr", cred.Language)
+	})
+
+	t.Run("returns error on database failure", func(t *testing.T) {
+		db := testutil.NewDB(t)
+		sqlDB, err := db.DB()
+		require.NoError(t, err)
+		require.NoError(t, sqlDB.Close())
+		repo := repository.NewAuthRepository(db)
+
+		err = repo.UpdateLanguage(1, "en")
 
 		assert.Error(t, err)
 	})

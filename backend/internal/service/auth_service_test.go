@@ -309,6 +309,87 @@ func TestAuthService_UpdateCredentials(t *testing.T) {
 	})
 }
 
+func TestAuthService_GetLanguage(t *testing.T) {
+	t.Run("returns default en when not configured", func(t *testing.T) {
+		repo := mocks.NewMockAuthRepository(t)
+		repo.EXPECT().Find().Return(nil, nil)
+
+		language, err := service.NewAuthService(repo).GetLanguage()
+
+		require.NoError(t, err)
+		assert.Equal(t, "en", language)
+	})
+
+	t.Run("returns normalized stored language", func(t *testing.T) {
+		repo := mocks.NewMockAuthRepository(t)
+		repo.EXPECT().Find().Return(&domain.AppCredential{Language: "FR"}, nil)
+
+		language, err := service.NewAuthService(repo).GetLanguage()
+
+		require.NoError(t, err)
+		assert.Equal(t, "fr", language)
+	})
+
+	t.Run("propagates repository error", func(t *testing.T) {
+		repo := mocks.NewMockAuthRepository(t)
+		repo.EXPECT().Find().Return(nil, errors.New("db error"))
+
+		_, err := service.NewAuthService(repo).GetLanguage()
+
+		assert.Error(t, err)
+	})
+}
+
+func TestAuthService_UpdateLanguage(t *testing.T) {
+	t.Run("updates normalized language", func(t *testing.T) {
+		repo := mocks.NewMockAuthRepository(t)
+		repo.EXPECT().Find().Return(&domain.AppCredential{ID: 1}, nil)
+		repo.EXPECT().UpdateLanguage(uint(1), "fr").Return(nil)
+
+		err := service.NewAuthService(repo).UpdateLanguage(" FR ")
+
+		require.NoError(t, err)
+	})
+
+	t.Run("defaults unknown language to en", func(t *testing.T) {
+		repo := mocks.NewMockAuthRepository(t)
+		repo.EXPECT().Find().Return(&domain.AppCredential{ID: 1}, nil)
+		repo.EXPECT().UpdateLanguage(uint(1), "en").Return(nil)
+
+		err := service.NewAuthService(repo).UpdateLanguage("es")
+
+		require.NoError(t, err)
+	})
+
+	t.Run("returns error when not configured", func(t *testing.T) {
+		repo := mocks.NewMockAuthRepository(t)
+		repo.EXPECT().Find().Return(nil, nil)
+
+		err := service.NewAuthService(repo).UpdateLanguage("fr")
+
+		assert.ErrorContains(t, err, "not configured")
+	})
+
+	t.Run("propagates find error", func(t *testing.T) {
+		repo := mocks.NewMockAuthRepository(t)
+		repo.EXPECT().Find().Return(nil, errors.New("db error"))
+
+		err := service.NewAuthService(repo).UpdateLanguage("fr")
+
+		assert.Error(t, err)
+	})
+
+	t.Run("propagates update error", func(t *testing.T) {
+		repo := mocks.NewMockAuthRepository(t)
+		repo.EXPECT().Find().Return(&domain.AppCredential{ID: 1}, nil)
+		repo.EXPECT().UpdateLanguage(uint(1), "fr").Return(errors.New("db error"))
+
+		err := service.NewAuthService(repo).UpdateLanguage("fr")
+
+		assert.Error(t, err)
+	})
+}
+
 // mock_anyString matches any string argument in EXPECT() calls where the
 // exact value cannot be known in advance (e.g. bcrypt hashes, JWT secrets).
 var mock_anyString = mock.AnythingOfType("string")

@@ -241,6 +241,14 @@ export const settingsApi = {
     return http
       .patch('/settings/credentials', { current_password: currentPassword, new_username: newUsername, new_password: newPassword })
       .then(() => undefined)
+  },
+
+  getLanguage(): Promise<string> {
+    return http.get<{ language: string }>('/settings/language').then((r) => r.data.language)
+  },
+
+  updateLanguage(language: string): Promise<void> {
+    return http.patch('/settings/language', { language }).then(() => undefined)
   }
 }
 

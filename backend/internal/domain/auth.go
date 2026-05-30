@@ -9,6 +9,7 @@ type AppCredential struct {
 	Username     string    `json:"username"   gorm:"not null"`
 	PasswordHash string    `json:"-"          gorm:"column:password_hash;not null"`
 	JWTSecret    string    `json:"-"          gorm:"column:jwt_secret;not null"`
+	Language     string    `json:"language"   gorm:"column:language;not null;default:en"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -20,6 +21,8 @@ type AuthRepository interface {
 	Create(username, passwordHash, jwtSecret string) (*AppCredential, error)
 	// Update persists a changed username and/or password hash.
 	Update(id uint, username, passwordHash string) error
+	// UpdateLanguage persists the UI language for the singleton credential row.
+	UpdateLanguage(id uint, language string) error
 }
 
 // AuthService defines business logic for authentication.
@@ -35,6 +38,10 @@ type AuthService interface {
 	// UpdateCredentials changes the stored username and/or password.
 	// currentPassword must match the existing hash.
 	UpdateCredentials(currentPassword, newUsername, newPassword string) error
+	// GetLanguage returns the persisted UI language.
+	GetLanguage() (string, error)
+	// UpdateLanguage changes the persisted UI language.
+	UpdateLanguage(language string) error
 }
 
 // SetupInput is the request body for the one-time setup wizard.

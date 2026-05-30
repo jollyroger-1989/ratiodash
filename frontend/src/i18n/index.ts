@@ -4,8 +4,14 @@ import fr from './locales/fr'
 
 // Detect browser language, fallback to 'en'
 const browserLang = navigator.language.split('-')[0]
-const savedLang = localStorage.getItem('lang')
-const locale = savedLang ?? (browserLang === 'fr' ? 'fr' : 'en')
+const locale = browserLang === 'fr' ? 'fr' : 'en'
+
+export const SUPPORTED_LOCALES = ['en', 'fr'] as const
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
+
+export function normalizeLocale(value: string): SupportedLocale {
+  return value === 'fr' ? 'fr' : 'en'
+}
 
 export type MessageSchema = typeof en
 

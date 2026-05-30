@@ -65,10 +65,12 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { normalizeLocale, SUPPORTED_LOCALES } from '@/i18n'
+import { settingsApi } from '@/services/api'
 import StarField from '@/components/StarField.vue'
 
 const { locale } = useI18n()
-const availableLocales = ['en', 'fr']
+const availableLocales = SUPPORTED_LOCALES
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -81,9 +83,38 @@ watch(() => route.path, () => {
 
 const isAuthPage = computed(() => route.name === 'login' || route.name === 'setup')
 
-function setLocale(lang: string) {
-  locale.value = lang
-  localStorage.setItem('lang', lang)
+async function syncLocaleFromBackend() {
+  if (!authStore.isAuthenticated) return
+  if (route.name === 'setup') return
+  try {
+    const backendLocale = await settingsApi.getLanguage()
+    locale.value = normalizeLocale(backendLocale)
+  } catch {
+    // Keep current locale when backend settings cannot be read.
+  }
+}
+
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (isAuthenticated) {
+      void syncLocaleFromBackend()
+    }
+  },
+  { immediate: true }
+)
+
+async function setLocale(lang: string) {
+  const normalized = normalizeLocale(lang)
+  const previous = locale.value
+  locale.value = normalized
+
+  if (!authStore.isAuthenticated) return
+  try {
+    await settingsApi.updateLanguage(normalized)
+  } catch {
+    locale.value = previous
+  }
 }
 
 function logout() {

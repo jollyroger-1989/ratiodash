@@ -150,3 +150,39 @@ func TestAuthHandler_UpdateCredentials(t *testing.T) {
 		assert.Equal(t, http.StatusUnprocessableEntity, resp.Code)
 	})
 }
+
+func TestAuthHandler_SettingsLanguage(t *testing.T) {
+	t.Run("returns default language when configured", func(t *testing.T) {
+		env := setupAuthHandler(t)
+		env.api.Do(http.MethodPost, "/api/v1/auth/setup",
+			map[string]string{"username": "admin", "password": "password123"})
+
+		resp := env.api.Do(http.MethodGet, "/api/v1/settings/language")
+
+		require.Equal(t, http.StatusOK, resp.Code)
+		var body struct {
+			Language string `json:"language"`
+		}
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		assert.Equal(t, "en", body.Language)
+	})
+
+	t.Run("updates language", func(t *testing.T) {
+		env := setupAuthHandler(t)
+		env.api.Do(http.MethodPost, "/api/v1/auth/setup",
+			map[string]string{"username": "admin", "password": "password123"})
+
+		resp := env.api.Do(http.MethodPatch, "/api/v1/settings/language",
+			map[string]string{"language": "fr"})
+
+		assert.Equal(t, http.StatusNoContent, resp.Code)
+
+		readResp := env.api.Do(http.MethodGet, "/api/v1/settings/language")
+		require.Equal(t, http.StatusOK, readResp.Code)
+		var body struct {
+			Language string `json:"language"`
+		}
+		require.NoError(t, json.NewDecoder(readResp.Body).Decode(&body))
+		assert.Equal(t, "fr", body.Language)
+	})
+}
