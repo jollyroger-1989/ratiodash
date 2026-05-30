@@ -1,0 +1,63 @@
+id: torr9
+name: Torr9
+description: >-
+  Torr9 private torrent tracker (French). Authentication uses a JSON API login
+  that returns a Bearer token. Bonus bytes are added to the totals.
+language: fr-FR
+type: private
+encoding: UTF-8
+links:
+  - https://api.torr9.net/
+
+settings:
+  - name: username
+    type: text
+    label: Username
+    required: true
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  method: json
+  path: /api/v1/auth/login
+  inputs:
+    username: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+    remember_me: true
+  response:
+    type: json
+  # The login response contains a JWT that must be included in subsequent requests.
+  captures:
+    token:
+      selector: token
+
+stats:
+  path: /api/v1/users/me
+  headers:
+    Authorization: "Bearer {{ .Captures.token }}"
+  response:
+    type: json
+  fields:
+    # The API exposes raw byte counts split into upload/download and bonus buckets.
+    # Bonus bytes must be added to the totals before computing the ratio.
+    _uploaded:
+      selector: total_uploaded_bytes
+    _bonus_uploaded:
+      selector: bonus_uploaded
+      optional: true
+      default: "0"
+    uploaded:
+      text: "{{ isum .Result._uploaded .Result._bonus_uploaded }}"
+    _downloaded:
+      selector: total_downloaded_bytes
+    _bonus_downloaded:
+      selector: bonus_downloaded
+      optional: true
+      default: "0"
+    downloaded:
+      text: "{{ isum .Result._downloaded .Result._bonus_downloaded }}"
+    # The API does not expose a ratio field; compute it from the totals.
+    ratio:
+      text: "{{ fratio .Result.uploaded .Result.downloaded }}"

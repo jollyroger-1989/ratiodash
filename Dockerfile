@@ -36,14 +36,16 @@ RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
-# Only the binary is needed — frontend assets are embedded inside it.
+# Only the binary and YAML scraper definitions are needed — frontend assets are embedded inside it.
 COPY --from=backend-builder /app/ratiodash ./ratiodash
+COPY backend/scrapers ./scrapers
 
 # Persist the SQLite database across restarts via a named volume
 VOLUME ["/data"]
 
 ENV SERVER_ADDR="0.0.0.0:8080" \
-    DATABASE_URL="/data/ratiodash.db"
+    DATABASE_URL="/data/ratiodash.db" \
+    SCRAPERS_DIR="/app/scrapers"
 
 EXPOSE 8080
 

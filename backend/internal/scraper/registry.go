@@ -1,6 +1,8 @@
 package scraper
 
 import (
+	"fmt"
+
 	"go.uber.org/fx"
 
 	"github.com/jose/ratiodash/internal/domain"
@@ -17,12 +19,17 @@ type registryParams struct {
 	Scrapers []domain.TrackerScraper `group:"scrapers"`
 }
 
-func NewRegistry(p registryParams) *Registry {
-	r := &Registry{scrapers: make(map[string]domain.TrackerScraper, len(p.Scrapers))}
-	for _, s := range p.Scrapers {
+func NewRegistry(p registryParams, ldr *Loader) (*Registry, error) {
+	yamlScrapers, err := ldr.Load()
+	if err != nil {
+		return nil, fmt.Errorf("loading YAML scrapers: %w", err)
+	}
+	all := append(p.Scrapers, yamlScrapers...)
+	r := &Registry{scrapers: make(map[string]domain.TrackerScraper, len(all))}
+	for _, s := range all {
 		r.scrapers[s.Key()] = s
 	}
-	return r
+	return r, nil
 }
 
 func (r *Registry) Get(key string) (domain.TrackerScraper, bool) {

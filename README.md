@@ -104,11 +104,12 @@ Raw OpenAPI 3.1 spec is at **http://localhost:8080/openapi.json**
 | Scraper key | Tracker(s) | Auth method |
 |-------------|------------|-------------|
 | `unit3d`    | Any UNIT3D-based tracker (e.g. Generation-Free, G3mini-Tracker, The Old School, …) | API token |
-| `c411`      | c411.org | Username + password |
-| `torr9`     | Any Torr9-based tracker | Username + password |
+| `c411`      | C411 | Username + password |
+| `torr9`     | Torr9 | Username + password |
 | `yggreborn` | YggReborn | Username (email) + password |
 
-To add support for a new tracker, copy `backend/internal/scraper/generic.go`, implement `Key()` and `Fetch()`, and register it in `scraper/module.go`.
+To add support for a new tracker, create or update a YAML definition in `backend/scrapers/`.
+See [docs/scraper-definitions.md](docs/scraper-definitions.md) for a step-by-step guide.
 
 ## Project structure
 

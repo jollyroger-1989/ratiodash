@@ -18,6 +18,8 @@ type Config struct {
 	NtfyURL string
 	// NtfyToken is an optional Bearer token for private ntfy topics.
 	NtfyToken string
+	// ScrapersDir is the directory from which YAML scraper definitions are loaded.
+	ScrapersDir string
 }
 
 // New returns a Config populated from environment variables with sensible defaults.
@@ -29,6 +31,7 @@ func New() *Config {
 		AllowedOrigins: strings.Split(origins, ","),
 		NtfyURL:        getEnv("NTFY_URL", ""),
 		NtfyToken:      getEnv("NTFY_TOKEN", ""),
+		ScrapersDir:    getEnv("SCRAPERS_DIR", "./scrapers"),
 	}
 }
 

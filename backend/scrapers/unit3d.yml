@@ -1,0 +1,40 @@
+id: unit3d
+name: Unit3D
+description: >-
+  UNIT3D open-source private tracker software.
+  The tracker URL and API token are required as credentials.
+language: en-US
+type: private
+encoding: UTF-8
+
+# No links array — the tracker URL is user-supplied via the url credential.
+settings:
+  - name: url
+    type: text
+    label: Tracker URL
+    required: true
+  - name: token
+    type: password
+    label: API Token
+    required: true
+
+# No login block — authentication is token-based (Authorization: Bearer).
+stats:
+  path: /api/user
+  headers:
+    Authorization: "Bearer {{ .Config.token }}"
+  response:
+    type: json
+  fields:
+    uploaded:
+      selector: uploaded
+      filters:
+        - name: parsebytes
+    downloaded:
+      selector: downloaded
+      filters:
+        - name: parsebytes
+    ratio:
+      selector: ratio
+      filters:
+        - name: parsefloat

@@ -1,0 +1,60 @@
+id: yggreborn
+name: YggReborn
+description: >-
+  YggReborn is a French private BitTorrent tracker.
+  Authentication uses a CSRF-protected login form.
+language: fr-FR
+type: private
+encoding: UTF-8
+links:
+  - https://www.yggreborn.org/
+
+settings:
+  - name: username
+    type: text
+    label: Email / Username
+    required: true
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  method: form
+  path: /login
+  # Static inputs rendered as templates.
+  inputs:
+    identifier: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+  # CSRF token is a hidden form field on the login page.
+  selectorinputs:
+    csrf_token:
+      selector: "input[name=csrf_token]"
+      attribute: value
+
+stats:
+  path: /account/
+  response:
+    type: html
+  fields:
+    # The account page renders stats in a 2-column grid where each cell is:
+    #   <div>
+    #     <div>VALUE</div>
+    #     <div class="mt-1">LABEL</div>
+    #   </div>
+    # We select the value div by finding the parent that contains the label.
+    uploaded:
+      selector: 'div:has(div.mt-1:contains("Upload")) > div:first-child'
+      match: last
+      filters:
+        - name: parsebytes
+    downloaded:
+      selector: 'div:has(div.mt-1:contains("Download")) > div:first-child'
+      match: last
+      filters:
+        - name: parsebytes
+    ratio:
+      selector: 'div:has(div.mt-1:contains("Ratio")) > div:first-child'
+      match: last
+      filters:
+        - name: parsefloat

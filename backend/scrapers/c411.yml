@@ -1,0 +1,59 @@
+id: c411
+name: C411
+description: >-
+  C411 private BitTorrent tracker (French). The login flow GETs a CSRF token
+  from the login page and POSTs it as an HTTP header alongside JSON credentials.
+  Authentication state is maintained via session cookies.
+language: fr-FR
+type: private
+encoding: UTF-8
+links:
+  - https://c411.org/
+
+settings:
+  - name: username
+    type: text
+    label: Username
+    required: true
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  # 1. GET /login  →  extract CSRF from <meta name="csrf-token" content="...">
+  # 2. POST /api/auth/login  →  JSON body + csrf-token header
+  # 3. Session cookie is set on success; used for all subsequent requests.
+  method: form
+  path: /login
+  submitpath: /api/auth/login
+  contenttype: application/json
+  inputs:
+    username: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+  # The CSRF token is embedded in a meta tag on the login page and must be
+  # forwarded as a request header (not a body field) on the POST.
+  selectorheaders:
+    csrf-token:
+      selector: "meta[name=csrf-token]"
+      attribute: content
+  response:
+    type: json
+  # Login failure is indicated by {"success": false} in the JSON response.
+  error:
+    - selector: success
+      value: "false"
+
+stats:
+  path: /api/auth/me
+  response:
+    type: json
+  fields:
+    uploaded:
+      selector: user.uploaded
+    downloaded:
+      selector: user.downloaded
+    ratio:
+      selector: user.ratio
+      filters:
+        - name: parsefloat

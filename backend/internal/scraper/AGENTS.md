@@ -1,183 +1,150 @@
-# Scraper layer — conventions
+# Scraper Layer — YAML Engine Conventions
 
 ## Purpose
 
-Each scraper is a site-specific adapter that fetches upload / download / ratio stats from one private tracker. All scrapers implement `domain.TrackerScraper` and are registered in `module.go` via FX value groups.
+The scraper package is YAML-first. Each tracker scraper is defined by a `.yml`
+file under `backend/scrapers/` and loaded at startup into a runtime
+`YAMLScraper` implementing `domain.TrackerScraper`.
+
+Code-defined scrapers are optional and are only needed for tracker-specific
+behavior that cannot be expressed in YAML.
 
 ---
 
-## Files & types
+## Architecture
 
-| Element | Convention | Example |
-|---|---|---|
-| File | `{site}.go` (lower-case, no underscores) | `unit3d.go`, `c411.go` |
-| Struct (exported) | `{Site}Scraper` | `Unit3DScraper`, `C411Scraper` |
-| Constructor | `New{Site}Scraper() *{Site}Scraper` | `NewUnit3DScraper` |
-| Embedding | Embed `BaseScraper` unless the site needs its own HTTP client (e.g. cookie jar) | |
-| Key | Short lower-case identifier matching the `scraper_key` stored in the database | `"unit3d"`, `"c411"` |
-
----
-
-## Interface
-
-Every scraper must satisfy `domain.TrackerScraper`:
-
-```go
-type TrackerScraper interface {
-    Key()              string
-    CredentialFields() []CredentialField
-    Fetch(ctx context.Context, tracker Tracker) (*TrackerStats, error)
-}
-```
-
-- `Key()` — unique registry key; must match the value users enter in the UI.
-- `CredentialFields()` — describes which JSON fields are required; used by the frontend to render the credential form. Return `nil` for generic/unstructured scrapers.
-- `Fetch()` — performs the HTTP request(s) and returns parsed stats. Always propagate context so the caller can cancel long-running requests.
+- `loader.go`: discovers and parses `*.yml` files from `SCRAPERS_DIR`
+- `definition.go`: YAML schema (`Definition`, `LoginDef`, `StatsDef`, etc.)
+- `yaml_scraper.go`: execution engine (login + stats fetch + extraction)
+- `filter.go`: built-in field filters (parsebytes, parsefloat, regex, etc.)
+- `template.go`: Go template rendering with helper funcs (`isum`, `fratio`, `re_replace`)
+- `html_extractor.go`: CSS extraction via goquery
+- `json_extractor.go`: JSON extraction via gjson
+- `registry.go`: combines optional code scrapers (FX group) with loaded YAML scrapers
+- `module.go`: wires `NewLoader` and `NewRegistry`
 
 ---
 
-## BaseScraper
+## Runtime Wiring
 
-`BaseScraper` provides a pre-configured `http.Client` (30-second timeout) and two helpers:
+`Module` provides `NewLoader` and `NewRegistry`, then exports registry as
+`domain.ScraperRegistry`.
 
-| Method | When to use |
-|---|---|
-| `Get(ctx, rawCredentials string)` | Simple GET to the URL in credentials; sets Cookie, Bearer, X-Api-Key, and custom headers automatically |
-| `DoRequest(ctx, method, url string, creds Credentials)` | Custom method or URL — e.g. for POST login flows or API endpoints different from the tracker URL |
+Registry population flow:
 
-Scrapers that need their own cookie jar (like `C411Scraper`) do **not** embed `BaseScraper` and manage their own `http.Client`.
+1. collect code scrapers from FX group `group:"scrapers"` (if any)
+2. load YAML scrapers from `SCRAPERS_DIR` (default `./scrapers`)
+3. merge both into a key → scraper map
 
----
-
-## Credentials
-
-`ParseCredentials(raw string) (Credentials, error)` decodes the `tracker.Credentials` JSON field. The `Credentials` struct has these fields:
-
-| Field | Use |
-|---|---|
-| `URL` | Base URL of the tracker |
-| `Cookie` | Session cookie |
-| `Username` / `Password` | Username/password for login flows |
-| `APIKey` | Sent as `X-Api-Key` header |
-| `Token` | Sent as `Authorization: Bearer <token>` |
-| `Headers` | Arbitrary extra headers (`map[string]string`) |
-
-Call `ParseCredentials` at the top of `Fetch` and validate required fields immediately — return a descriptive error before making any HTTP request.
-
-**Security**: `DoRequest` validates that the URL scheme is `http` or `https` to prevent SSRF via `file://`, `gopher://`, etc.
+If `SCRAPERS_DIR` does not exist, loader returns an empty list (not an error).
 
 ---
 
-## Parse helpers (package-level)
+## YAML Definition Rules
 
-| Helper | Purpose |
-|---|---|
-| `ParseJSON(body []byte, dst any) error` | Decode JSON response |
-| `ParseHTML(body []byte) (*html.Node, error)` | Parse HTML into a node tree |
-| `WalkHTML(root *html.Node, fn func(*html.Node) bool)` | Walk HTML tree; return `false` to stop |
-| `ParseXML(body []byte, dst any) error` | Decode XML response |
+### Required fields
 
----
+- `id`
+- `stats.path`
 
-## Adding a new scraper
+### Common sections
 
-1. Copy `generic.go`, rename the file and the struct.
-2. Implement `Key()`, `CredentialFields()`, and `Fetch()`.
-3. Register in `module.go`:
+- `settings`: credential fields shown in UI (`name`, `type`, `label`, `required`)
+- `login`: optional auth flow
+- `stats`: endpoint + extraction map for `uploaded`, `downloaded`, `ratio`
 
-```go
-fx.Provide(
-    fx.Annotate(
-        NewMyScraper,
-        fx.As(new(domain.TrackerScraper)),
-        fx.ResultTags(`group:"scrapers"`),
-    ),
-),
-```
+### Login methods
 
-4. Add a test file `{site}_test.go` (see Testing conventions below).
+- `method: form`: GET login page, extract dynamic inputs/headers, POST submit
+- `method: json`: POST JSON body
+- `method: post`: POST form body without preflight GET
+
+### Login extraction features
+
+- `selectorinputs`: extract values into POST body
+- `selectorheaders`: extract values into HTTP headers (for CSRF-header flows)
+- `captures`: save response values into template context (`.Captures.*`)
+- `error`: failure indicators for HTML selectors or JSON path values
 
 ---
 
-## Error wrapping
+## Extraction Behavior
 
-Prefix every error with the scraper key:
+`stats.fields` is order-preserving (`OrderedFields`) so later template fields can
+reference earlier results via `.Result`.
 
-```go
-return nil, fmt.Errorf("unit3d: %w", err)
-return nil, fmt.Errorf("unit3d: credentials must contain a \"token\" field")
-```
+Field behavior:
+
+- `selector`: CSS selector (HTML) or gjson path (JSON)
+- `attribute`: HTML attribute to read, defaults to element text
+- `text`: Go template value source (bypasses selector)
+- `optional` + `default`: fallback behavior
+- `filters`: transform pipeline
+- `match`: HTML-only selector disambiguation
+
+`match` values:
+
+- `first` (default): use first matched element
+- `last`: use last matched element (useful when selector matches both container and leaf)
 
 ---
 
-## Testing conventions
+## Selector Notes
 
-### File & package
+goquery/cascadia does not reliably support direct-child combinators inside
+`:has(...)` for this project setup. Prefer:
 
-| Element | Convention | Example |
-|---|---|---|
-| File | `{site}_test.go` | `unit3d_test.go`, `scraper_test.go` |
-| Package | `package scraper_test` (external black-box) | — |
+- `div:has(div.mt-1:contains("Upload"))`
 
-Use `package scraper_test` so tests can only access exported types and functions.
+over:
 
-### No real HTTP calls
+- `div:has(> div.mt-1:contains("Upload"))`
 
-Scrapers must never make live HTTP requests in tests. Use `net/http/httptest.NewServer` to spin up a fake tracker endpoint:
+If a selector still matches both outer and inner nodes, set `match: last`.
 
-```go
-srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    fmt.Fprintln(w, `{"uploaded":1073741824,"downloaded":536870912,"ratio":2.0}`)
-}))
-defer srv.Close()
+---
 
-tracker := domain.Tracker{
-    Credentials: fmt.Sprintf(`{"url":%q,"token":"test-token"}`, srv.URL),
-}
-stats, err := scraper.NewUnit3DScraper().Fetch(t.Context(), tracker)
-require.NoError(t, err)
-assert.Equal(t, int64(1073741824), stats.Uploaded)
-```
+## Credentials And URL Safety
 
-### Structure
+Credentials are parsed from tracker JSON into a string map.
 
-- **One `Test*` function per scraper** — e.g. `TestUnit3DScraper_Fetch`.
-- **Sub-tests for cases** — happy path, missing credential fields, bad JSON response, HTTP error, etc.
-- `TestParseCredentials` lives in `scraper_test.go` alongside `BaseScraper` / `GenericScraper` tests.
+- required `settings` fields must be present before requests start
+- base URL resolution prefers `credentials.url`, then falls back to definition `links[0]`
+- only `http` and `https` URLs are allowed
 
-### What to test
+---
 
-| Scenario | Required |
-|---|---|
-| Happy path — correct stats returned | yes |
-| Missing required credential field returns error | yes for each required field |
-| Invalid credentials JSON returns error | yes |
-| HTTP error (non-2xx) returns error | yes |
-| Malformed / unexpected response body returns error | yes |
-| `Key()` returns the expected string | yes |
-| `CredentialFields()` returns the expected fields | yes |
-| SSRF via `file://` or other non-http/https scheme returns error | yes (for scrapers using `DoRequest`) |
+## Logging
 
-### Assertions
+Use stdlib `log.Printf` (not logrus) with scraper id prefix:
 
-Use `testify/require` for the first error in a chain (makes the rest of the test skip on failure) and `testify/assert` for field comparisons:
+- `scraper <id>: fetching stats ...`
+- `scraper <id>: GET/POST ...`
+- `scraper <id>: login successful`
+- `scraper <id>: stats -> uploaded=... downloaded=... ratio=...`
 
-```go
-stats, err := s.Fetch(context.Background(), tracker)
-require.NoError(t, err)
-assert.Equal(t, int64(1073741824), stats.Uploaded)
-assert.Equal(t, int64(536870912), stats.Downloaded)
-assert.InDelta(t, 2.0, stats.Ratio, 0.001)
-```
+Do not log secrets (passwords, tokens, cookie values).
 
-### Credential fixture helper
+---
 
-Define a small helper per test file to build credential JSON without string noise:
+## Adding Or Updating A Scraper
 
-```go
-func creds(url, token string) string {
-    b, _ := json.Marshal(map[string]string{"url": url, "token": token})
-    return string(b)
-}
-```
+1. Add or edit `backend/scrapers/<key>.yml`.
+2. Keep `id` aligned with DB/UI `scraper_key`.
+3. Add/adjust tests in `yaml_scraper_test.go` with `httptest.NewServer` fixtures.
+4. Validate HTML selectors against realistic nested markup.
+5. Run scraper package tests, then `go test ./...`.
+
+Only add a code-defined scraper when YAML cannot express the required behavior.
+
+---
+
+## Testing Conventions
+
+- no live HTTP calls; use `httptest.NewServer`
+- cover happy path + auth failures + extraction failures + malformed responses
+- include edge cases for bytes/float parsing filters
+- for nested HTML selectors, include container-wrapping fixtures and assert `match: last` behavior where needed
+
+Useful test helpers are exported via `export_test.go` for parser/template/filter
+coverage.
