@@ -175,6 +175,14 @@ export default {
         errorSave: 'Échec de l\'enregistrement.',
       },
     },
+    theme: {
+      title: 'Apparence',
+      subtitle: 'Choisissez votre thème de couleurs préféré.',
+      nebula: 'Nebula',
+      light: 'Clair',
+      'tokyo-night': 'Tokyo Night',
+      dracula: 'Dracula',
+    },
     credentials: {
       title: 'Modifier les identifiants',
       subtitle: "Changez votre nom d'utilisateur ou mot de passe administrateur.",

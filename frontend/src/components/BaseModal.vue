@@ -39,7 +39,7 @@ defineEmits<{ close: [] }>()
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(2, 8, 23, 0.75);
+  background: var(--modal-backdrop);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
@@ -49,14 +49,14 @@ defineEmits<{ close: [] }>()
 }
 
 .modal {
-  background: rgba(10, 16, 50, 0.95);
+  background: var(--modal-bg);
   border: 1px solid var(--border-bright);
   border-radius: 14px;
   padding: 2.5rem;
   width: min(680px, 92vw);
   max-height: 90dvh;
   overflow-y: auto;
-  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.7), 0 0 40px rgba(129, 140, 248, 0.12);
+  box-shadow: var(--modal-shadow), var(--modal-shadow-glow);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }

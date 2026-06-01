@@ -2,6 +2,32 @@
   <div class="settings-page">
     <h1 class="settings-title">{{ $t('settings.title') }}</h1>
 
+    <!-- Theme section -->
+    <div class="settings-card theme-card">
+      <h2 class="section-title">{{ $t('settings.theme.title') }}</h2>
+      <p class="section-subtitle">{{ $t('settings.theme.subtitle') }}</p>
+      <div class="theme-options">
+        <button
+          v-for="theme in themeStore.themes"
+          :key="theme.id"
+          :class="['theme-option', { active: themeStore.currentTheme === theme.id }]"
+          type="button"
+          @click="themeStore.setTheme(theme.id)"
+        >
+          <span class="theme-swatches">
+            <span
+              v-for="(color, i) in theme.swatches"
+              :key="i"
+              class="theme-swatch"
+              :style="{ background: color }"
+            />
+          </span>
+          <span class="theme-name">{{ $t(theme.labelKey) }}</span>
+          <span v-if="themeStore.currentTheme === theme.id" class="theme-check">&#10003;</span>
+        </button>
+      </div>
+    </div>
+
     <div class="settings-card credentials-card">
       <h2 class="section-title">{{ $t('settings.credentials.title') }}</h2>
       <p class="section-subtitle">{{ $t('settings.credentials.subtitle') }}</p>
@@ -163,8 +189,10 @@ import {
 } from '@/services/api'
 import NotifierFormModal from '@/components/NotifierFormModal.vue'
 import APIClientFormModal from '@/components/APIClientFormModal.vue'
+import { useThemeStore } from '@/stores/theme'
 
 const { t } = useI18n()
+const themeStore = useThemeStore()
 
 // ---- Credentials ----
 
@@ -359,7 +387,7 @@ onMounted(async () => {
 .field input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  background: rgba(10, 16, 42, 0.8);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 1rem;
@@ -371,7 +399,7 @@ onMounted(async () => {
 .field input:focus {
   outline: none;
   border-color: var(--border-bright);
-  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.12);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .form-error {
@@ -383,13 +411,13 @@ onMounted(async () => {
 .form-success {
   margin: 0;
   font-size: 0.85rem;
-  color: #4ade80;
+  color: var(--ratio-good);
 }
 
 .submit-btn {
   margin-top: 0.25rem;
   padding: 0.5rem 1.1rem;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: linear-gradient(135deg, var(--btn-primary-start), var(--btn-primary-end));
   color: white;
   border: none;
   border-radius: 6px;
@@ -397,12 +425,12 @@ onMounted(async () => {
   font-size: 0.9rem;
   font-weight: 600;
   transition: opacity 0.2s, box-shadow 0.2s;
-  box-shadow: 0 0 16px rgba(129, 140, 248, 0.3);
+  box-shadow: 0 0 16px var(--btn-primary-shadow);
 }
 
 .submit-btn:hover {
   opacity: 0.9;
-  box-shadow: 0 0 24px rgba(129, 140, 248, 0.45);
+  box-shadow: 0 0 24px var(--btn-primary-shadow-hover);
 }
 
 .submit-btn:disabled {
@@ -411,6 +439,73 @@ onMounted(async () => {
 }
 
 /* Notifiers */
+
+/* Theme selector */
+
+.theme-card {
+  margin-bottom: 1.5rem;
+}
+
+.theme-options {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: transparent;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.9rem;
+  min-width: 100px;
+  position: relative;
+}
+
+.theme-option:hover {
+  border-color: var(--border-bright);
+  background: var(--accent-glow);
+  color: var(--text);
+}
+
+.theme-option.active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  color: var(--text);
+}
+
+.theme-swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.theme-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.theme-name {
+  font-weight: 500;
+}
+
+.theme-check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.75rem;
+  color: var(--accent);
+}
 
 .credentials-card {
   margin-bottom: 1.5rem;

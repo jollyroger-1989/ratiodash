@@ -175,6 +175,14 @@ export default {
         errorSave: 'Failed to save notifier.',
       },
     },
+    theme: {
+      title: 'Appearance',
+      subtitle: 'Choose your preferred color scheme.',
+      nebula: 'Nebula',
+      light: 'Light',
+      'tokyo-night': 'Tokyo Night',
+      dracula: 'Dracula',
+    },
     credentials: {
       title: 'Update Credentials',
       subtitle: 'Change your admin username or password.',

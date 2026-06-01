@@ -133,8 +133,8 @@ async function copyApiKey() {
 
 <style scoped>
 .created-token-box {
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: var(--accent-glow);
+  border: 1px solid var(--border-bright);
   border-radius: 8px;
   padding: 0.8rem;
 }
@@ -158,8 +158,8 @@ async function copyApiKey() {
   padding: 0.45rem 0.55rem;
   font-size: 0.78rem;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.28);
-  color: #d1fae5;
+  background: var(--input-bg);
+  color: var(--text);
   overflow-x: auto;
 }
 
@@ -172,18 +172,18 @@ async function copyApiKey() {
 .btn-copy {
   min-width: 74px;
   height: 30px;
-  border: 1px solid rgba(52, 211, 153, 0.45);
+  border: 1px solid var(--border-bright);
   border-radius: 6px;
   background: transparent;
-  color: #34d399;
+  color: var(--ratio-good);
   font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
 }
 
 .btn-copy:hover {
-  color: #6ee7b7;
-  border-color: #6ee7b7;
+  color: var(--text);
+  border-color: var(--ratio-good);
 }
 
 @media (max-width: 760px) {

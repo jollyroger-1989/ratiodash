@@ -134,7 +134,7 @@ function logout() {
 .app-sidebar {
   width: 60px;
   flex-shrink: 0;
-  background: rgba(5, 8, 24, 0.85);
+  background: var(--sidebar-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-right: 1px solid var(--border);
@@ -189,10 +189,15 @@ function logout() {
   touch-action: manipulation;
 }
 
-.sidebar-link:hover,
+.sidebar-link:hover {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
 .sidebar-link.router-link-exact-active {
   background: var(--accent-glow);
   color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .sidebar-link--logout:hover {
@@ -211,7 +216,7 @@ function logout() {
   left: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(10, 16, 42, 0.97);
+  background: var(--tooltip-bg);
   border: 1px solid var(--border-bright);
   color: var(--text);
   padding: 0.25rem 0.6rem;
@@ -280,7 +285,7 @@ function logout() {
   top: 0.75rem;
   left: 0.75rem;
   z-index: 150;
-  background: rgba(5, 8, 24, 0.9);
+  background: var(--sidebar-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   width: 40px;
