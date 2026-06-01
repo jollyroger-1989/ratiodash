@@ -252,6 +252,39 @@ export const settingsApi = {
   }
 }
 
+// ---- API client types ----
+
+export interface APIClient {
+  id: number
+  name: string
+  key_prefix: string
+  enabled: boolean
+  last_used_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateAPIClientResponse {
+  client: APIClient
+  api_key: string
+}
+
+// ---- API client API helpers ----
+
+export const apiClientsApi = {
+  getAll(): Promise<APIClient[]> {
+    return http.get<APIClient[]>('/api-clients').then((r) => r.data)
+  },
+
+  create(name: string): Promise<CreateAPIClientResponse> {
+    return http.post<CreateAPIClientResponse>('/api-clients', { name }).then((r) => r.data)
+  },
+
+  remove(id: number): Promise<void> {
+    return http.delete(`/api-clients/${id}`).then(() => undefined)
+  }
+}
+
 // ---- Notifier config types ----
 
 export interface NotifierConfigField {

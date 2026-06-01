@@ -65,6 +65,40 @@
       </form>
     </div>
 
+    <div class="settings-card api-clients-card">
+      <div class="card-header-row">
+        <div>
+          <h2 class="section-title">{{ $t('settings.apiClients.title') }}</h2>
+          <p class="section-subtitle">{{ $t('settings.apiClients.subtitle') }}</p>
+        </div>
+        <button class="submit-btn add-api-client-btn" @click="openApiClientModal">
+          <font-awesome-icon :icon="['fas', 'plus']" /> {{ $t('settings.apiClients.create') }}
+        </button>
+      </div>
+
+      <p v-if="apiClientsError" class="form-error token-error">{{ apiClientsError }}</p>
+
+      <p v-if="loadingApiClients" class="muted">{{ $t('common.loading') }}</p>
+      <p v-else-if="!apiClients.length" class="empty-api-clients">{{ $t('settings.apiClients.empty') }}</p>
+
+      <ul v-else class="api-clients-list">
+        <li v-for="client in apiClients" :key="client.id" class="api-client-row">
+          <div class="api-client-info">
+            <span class="api-client-name">{{ client.name }}</span>
+            <span class="api-client-prefix">{{ client.key_prefix }}…</span>
+            <span v-if="client.last_used_at" class="api-client-last-used">
+              {{ $t('settings.apiClients.lastUsed', { date: $d(client.last_used_at, 'short') }) }}
+            </span>
+            <span v-else class="api-client-last-used muted-small">{{ $t('settings.apiClients.neverUsed') }}</span>
+          </div>
+
+          <button class="btn-icon btn-delete" type="button" :title="$t('settings.apiClients.revoke')" @click="removeApiClient(client.id)">
+            <font-awesome-icon :icon="['fas', 'xmark']" />
+          </button>
+        </li>
+      </ul>
+    </div>
+
     <!-- Notifiers section -->
     <div class="settings-card notifiers-card">
       <div class="card-header-row">
@@ -108,14 +142,27 @@
       :existing="editingNotifier"
       @saved="onNotifierSaved"
     />
+
+    <APIClientFormModal
+      v-model="showAPIClientModal"
+      @saved="onAPIClientSaved"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { settingsApi, notifierConfigsApi, type NotifierConfig, type NotifierTypeInfo } from '@/services/api'
+import {
+  settingsApi,
+  notifierConfigsApi,
+  apiClientsApi,
+  type APIClient,
+  type NotifierConfig,
+  type NotifierTypeInfo,
+} from '@/services/api'
 import NotifierFormModal from '@/components/NotifierFormModal.vue'
+import APIClientFormModal from '@/components/APIClientFormModal.vue'
 
 const { t } = useI18n()
 
@@ -128,6 +175,43 @@ const currentPassword = ref('')
 const loading = ref(false)
 const error = ref('')
 const success = ref(false)
+
+// ---- API clients ----
+
+const apiClients = ref<APIClient[]>([])
+const loadingApiClients = ref(false)
+const apiClientsError = ref('')
+const showAPIClientModal = ref(false)
+
+async function fetchApiClients() {
+  loadingApiClients.value = true
+  apiClientsError.value = ''
+  try {
+    apiClients.value = await apiClientsApi.getAll()
+  } catch {
+    apiClientsError.value = t('settings.apiClients.fetchError')
+  } finally {
+    loadingApiClients.value = false
+  }
+}
+
+function openApiClientModal() {
+  showAPIClientModal.value = true
+}
+
+async function removeApiClient(id: number) {
+  apiClientsError.value = ''
+  try {
+    await apiClientsApi.remove(id)
+    apiClients.value = apiClients.value.filter((client) => client.id !== id)
+  } catch {
+    apiClientsError.value = t('settings.apiClients.deleteError')
+  }
+}
+
+async function onAPIClientSaved() {
+  await fetchApiClients()
+}
 
 async function submit() {
   error.value = ''
@@ -208,7 +292,9 @@ async function onNotifierSaved() {
   await fetchNotifiers()
 }
 
-onMounted(fetchNotifiers)
+onMounted(async () => {
+  await Promise.all([fetchNotifiers(), fetchApiClients()])
+})
 </script>
 
 <style scoped>
@@ -328,6 +414,76 @@ onMounted(fetchNotifiers)
 
 .credentials-card {
   margin-bottom: 1.5rem;
+}
+
+.api-clients-card {
+  margin-bottom: 1.5rem;
+}
+
+.token-error {
+  margin-bottom: 0.8rem;
+}
+
+.add-api-client-btn {
+  margin-top: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.empty-api-clients {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.api-clients-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.api-client-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.api-client-info {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.api-client-name {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.api-client-prefix {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.33);
+  border-radius: 4px;
+  padding: 0.12rem 0.4rem;
+}
+
+.api-client-last-used {
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 .notifiers-card {
@@ -490,5 +646,11 @@ onMounted(fetchNotifiers)
 .btn-icon.btn-delete:hover {
   color: #f87171;
   border-color: #f87171;
+}
+
+@media (max-width: 760px) {
+  .add-api-client-btn {
+    width: 100%;
+  }
 }
 </style>

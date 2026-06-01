@@ -1,0 +1,14 @@
+-- +goose Up
+CREATE TABLE api_clients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    key_prefix TEXT NOT NULL UNIQUE,
+    key_hash TEXT NOT NULL UNIQUE,
+    enabled BOOLEAN NOT NULL DEFAULT 1,
+    last_used_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS api_clients;

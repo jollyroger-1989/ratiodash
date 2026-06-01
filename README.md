@@ -116,6 +116,49 @@ The SQLite database is persisted in the `ratiodash_data` named volume.
 Swagger UI is served at **http://localhost:8080/docs**
 Raw OpenAPI 3.1 spec is at **http://localhost:8080/openapi.json**
 
+### External app access
+
+Protected API routes now accept either:
+
+- A JWT from `POST /api/v1/auth/login`
+- An API key created via `POST /api/v1/api-clients`
+
+API client keys are intended for machine-to-machine integrations and are shown
+only once at creation time.
+
+Example flow:
+
+1. Login as admin and get JWT:
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"password123"}'
+```
+
+2. Create API key (using admin JWT):
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/api-clients \
+  -H "Authorization: Bearer <admin-jwt>" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"home-assistant"}'
+```
+
+3. Call protected endpoint with the returned API key:
+
+```bash
+curl -s http://localhost:8080/api/v1/trackers \
+  -H "Authorization: Bearer <api-key>"
+```
+
+4. Revoke API key when no longer needed:
+
+```bash
+curl -s -X DELETE http://localhost:8080/api/v1/api-clients/{id} \
+  -H "Authorization: Bearer <admin-jwt>"
+```
+
 ## Supported trackers
 
 | Scraper key | Tracker(s) | Auth method | Tested |
