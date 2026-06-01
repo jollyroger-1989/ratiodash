@@ -26,7 +26,8 @@ func setupNotifierConfigHandler(t *testing.T) humatest.TestAPI {
 	db := testutil.NewDB(t)
 	repo := repository.NewNotifierConfigRepository(db)
 	svc := service.NewNotifierConfigService(repo, notifier.NewFactory())
-	h := handler.NewNotifierConfigHandler(svc)
+	authRepo := repository.NewAuthRepository(db)
+	h := handler.NewNotifierConfigHandler(svc, authRepo)
 	api := testutil.NewAPI(t)
 	handler.RegisterNotifierConfigRoutes(api, h)
 	return api
@@ -35,7 +36,7 @@ func setupNotifierConfigHandler(t *testing.T) humatest.TestAPI {
 func setupNotifierConfigHandlerWithMock(t *testing.T) (humatest.TestAPI, *mocks.MockNotifierConfigService) {
 	t.Helper()
 	svc := mocks.NewMockNotifierConfigService(t)
-	h := handler.NewNotifierConfigHandler(svc)
+	h := handler.NewNotifierConfigHandler(svc, nil)
 	api := testutil.NewAPI(t)
 	handler.RegisterNotifierConfigRoutes(api, h)
 	return api, svc

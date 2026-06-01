@@ -13,11 +13,12 @@ import (
 // NotifierConfigHandler holds the HTTP handlers for NotifierConfig CRUD
 // and the notifier type catalogue.
 type NotifierConfigHandler struct {
-	service domain.NotifierConfigService
+	service  domain.NotifierConfigService
+	authRepo domain.AuthRepository
 }
 
-func NewNotifierConfigHandler(svc domain.NotifierConfigService) *NotifierConfigHandler {
-	return &NotifierConfigHandler{service: svc}
+func NewNotifierConfigHandler(svc domain.NotifierConfigService, authRepo domain.AuthRepository) *NotifierConfigHandler {
+	return &NotifierConfigHandler{service: svc, authRepo: authRepo}
 }
 
 // --- I/O types ---
@@ -73,7 +74,8 @@ type TestNotifierConfigByIDInput struct {
 // --- Handlers ---
 
 func (h *NotifierConfigHandler) ListNotifierTypes(_ context.Context, _ *struct{}) (*ListNotifierTypesOutput, error) {
-	return &ListNotifierTypesOutput{Body: domain.AvailableNotifierTypes}, nil
+	lang := notifierTypesLanguage(h.authRepo)
+	return &ListNotifierTypesOutput{Body: domain.LocalizeNotifierTypes(domain.AvailableNotifierTypes, lang)}, nil
 }
 
 func (h *NotifierConfigHandler) ListNotifierConfigs(_ context.Context, _ *struct{}) (*ListNotifierConfigsOutput, error) {

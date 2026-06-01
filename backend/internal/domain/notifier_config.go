@@ -6,8 +6,8 @@ import "time"
 // notifier type. The frontend uses these definitions to render forms dynamically.
 type NotifierConfigField struct {
 	Key      string   `json:"key"`
-	Label    string   `json:"label"`
-	Type     string   `json:"type"` // "text" | "password" | "url" | "select"
+	Label    string   `json:"label"` // localized server-side before response
+	Type     string   `json:"type"`  // "text" | "password" | "url" | "select"
 	Required bool     `json:"required"`
 	Options  []string `json:"options,omitempty"`
 }
