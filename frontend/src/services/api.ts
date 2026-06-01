@@ -290,8 +290,9 @@ export const apiClientsApi = {
 export interface NotifierConfigField {
   key: string
   label: string
-  type: 'text' | 'password' | 'url'
+  type: 'text' | 'password' | 'url' | 'select'
   required: boolean
+  options?: string[]
 }
 
 export interface NotifierTypeInfo {

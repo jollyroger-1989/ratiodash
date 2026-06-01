@@ -62,8 +62,13 @@ func TestNotifierConfigHandler_ListNotifierTypes(t *testing.T) {
 		var body []domain.NotifierTypeInfo
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 		require.NotEmpty(t, body)
-		assert.Equal(t, "ntfy", body[0].Key)
-		assert.NotEmpty(t, body[0].ConfigFields)
+		keys := make([]string, 0, len(body))
+		for _, tpe := range body {
+			keys = append(keys, tpe.Key)
+			assert.NotEmpty(t, tpe.ConfigFields)
+		}
+		assert.Contains(t, keys, "ntfy")
+		assert.Contains(t, keys, "email")
 	})
 }
 

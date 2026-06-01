@@ -5,10 +5,11 @@ import "time"
 // NotifierConfigField describes a single configuration input required by a
 // notifier type. The frontend uses these definitions to render forms dynamically.
 type NotifierConfigField struct {
-	Key      string `json:"key"`
-	Label    string `json:"label"`
-	Type     string `json:"type"` // "text" | "password" | "url"
-	Required bool   `json:"required"`
+	Key      string   `json:"key"`
+	Label    string   `json:"label"`
+	Type     string   `json:"type"` // "text" | "password" | "url" | "select"
+	Required bool     `json:"required"`
+	Options  []string `json:"options,omitempty"`
 }
 
 // NotifierTypeInfo describes a built-in notification backend.
@@ -28,6 +29,19 @@ var AvailableNotifierTypes = []NotifierTypeInfo{
 		ConfigFields: []NotifierConfigField{
 			{Key: "url", Label: "Topic URL", Type: "url", Required: true},
 			{Key: "token", Label: "Access Token", Type: "password", Required: false},
+		},
+	},
+	{
+		Key:   "email",
+		Label: "Email (SMTP)",
+		ConfigFields: []NotifierConfigField{
+			{Key: "host", Label: "SMTP Host", Type: "text", Required: true},
+			{Key: "port", Label: "SMTP Port", Type: "text", Required: true},
+			{Key: "from", Label: "From Address", Type: "text", Required: true},
+			{Key: "to", Label: "To Address(es)", Type: "text", Required: true},
+			{Key: "username", Label: "Username", Type: "text", Required: false},
+			{Key: "password", Label: "Password", Type: "password", Required: false},
+			{Key: "tls_mode", Label: "TLS Mode", Type: "select", Required: false, Options: []string{"starttls", "tls"}},
 		},
 	},
 }

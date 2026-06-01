@@ -27,7 +27,17 @@
                   ({{ $t('common.optional') }})
                 </span>
               </label>
+              <select
+                v-if="field.type === 'select'"
+                :id="'nf-cfg-' + field.key"
+                v-model="configValues[field.key]"
+                :required="field.required && !editMode"
+              >
+                <option value="" :disabled="field.required">Select...</option>
+                <option v-for="opt in field.options ?? []" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
               <input
+                v-else
                 :id="'nf-cfg-' + field.key"
                 v-model="configValues[field.key]"
                 :type="field.type === 'password' ? 'password' : field.type === 'url' ? 'url' : 'text'"
