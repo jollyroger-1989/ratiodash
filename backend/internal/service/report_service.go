@@ -318,12 +318,12 @@ func formatRatio(cur float64, base *domain.TrackerStats, loc notificationLocaliz
 	if math.Abs(delta) < 0.005 {
 		return fmt.Sprintf(" (➡️ %s)", loc.msg("report.body.no_change", nil))
 	}
-	arrow := "⬆️"
+	chart := "📈​"
 	if delta < 0 {
-		arrow = "⬇️"
+		chart = "📉​"
 		delta = -delta
 	}
-	return fmt.Sprintf(" (%s %.2f)", arrow, delta)
+	return fmt.Sprintf(" (%s %.2f)", chart, delta)
 }
 
 func ratioEmoji(ratio float64) string {
