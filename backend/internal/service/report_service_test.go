@@ -428,4 +428,53 @@ func TestReportService_Send(t *testing.T) {
 
 		require.NoError(t, err)
 	})
+
+	t.Run("report body uses expected evolution symbols", func(t *testing.T) {
+		repo := mocks.NewMockReportRepository(t)
+		trackers := mocks.NewMockTrackerService(t)
+		statsRepo := mocks.NewMockStatsRepository(t)
+		builder := mocks.NewMockNotifierBuilder(t)
+		notifier := mocks.NewMockNotifier(t)
+
+		lastSent := time.Now().Add(-12 * time.Hour)
+		nc := domain.NotifierConfig{ID: 1, Type: "ntfy", Config: `{}`}
+		report := &domain.Report{
+			ID:              1,
+			Name:            "R",
+			LastSentAt:      &lastSent,
+			NotifierConfigs: []domain.NotifierConfig{nc},
+		}
+		alpha := domain.Tracker{ID: 1, Name: "Alpha"}
+		beta := domain.Tracker{ID: 2, Name: "Beta"}
+
+		repo.EXPECT().FindByID(uint(1)).Return(report, nil)
+		trackers.EXPECT().GetAll().Return([]domain.Tracker{alpha, beta}, nil)
+		statsRepo.EXPECT().FindLatestAll().Return([]domain.TrackerStats{
+			{TrackerID: 1, Uploaded: 2000, Downloaded: 500, Ratio: 4.0},
+			{TrackerID: 2, Uploaded: 1000, Downloaded: 1000, Ratio: 1.0},
+		}, nil)
+		statsRepo.EXPECT().FindNearestAtOrBefore(uint(1), lastSent).Return(
+			&domain.TrackerStats{TrackerID: 1, Uploaded: 1000, Downloaded: 1000, Ratio: 1.0}, nil,
+		)
+		statsRepo.EXPECT().FindNearestAtOrBefore(uint(2), lastSent).Return(
+			&domain.TrackerStats{TrackerID: 2, Uploaded: 1000, Downloaded: 1000, Ratio: 1.0}, nil,
+		)
+		builder.EXPECT().Build("ntfy", "{}").Return(notifier, nil)
+		notifier.EXPECT().Notify(mock.Anything, mock.MatchedBy(func(n domain.Notification) bool {
+			return strings.Contains(n.Body, "⏫") &&
+				strings.Contains(n.Body, "⏬") &&
+				strings.Contains(n.Body, "🟰")
+		})).Return(nil)
+		repo.EXPECT().UpdateLastSentAt(uint(1), mock.AnythingOfType("time.Time")).Return(nil)
+
+		svc := newReportService(t, repo,
+			mocks.NewMockNotifierConfigRepository(t),
+			trackers,
+			statsRepo,
+			builder,
+		)
+		err := svc.Send(ctx, 1)
+
+		require.NoError(t, err)
+	})
 }

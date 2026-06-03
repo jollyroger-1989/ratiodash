@@ -299,12 +299,12 @@ func formatDelta(base, cur *domain.TrackerStats, f field, loc notificationLocali
 		delta = cur.Downloaded - base.Downloaded
 	}
 	if delta == 0 {
-		return fmt.Sprintf(" (➡️ %s)", loc.msg("report.body.no_change", nil))
+		return fmt.Sprintf(" (🟰 %s)", loc.msg("report.body.no_change", nil))
 	}
-	arrow := "⬆️"
+	arrow := "⏫"
 	absD := delta
 	if delta < 0 {
-		arrow = "⬇️"
+		arrow = "⏬"
 		absD = -delta
 	}
 	return fmt.Sprintf(" (%s %s)", arrow, formatBytes(absD))
@@ -316,14 +316,14 @@ func formatRatio(cur float64, base *domain.TrackerStats, loc notificationLocaliz
 	}
 	delta := cur - base.Ratio
 	if math.Abs(delta) < 0.005 {
-		return fmt.Sprintf(" (➡️ %s)", loc.msg("report.body.no_change", nil))
+		return fmt.Sprintf(" (🟰 %s)", loc.msg("report.body.no_change", nil))
 	}
-	chart := "📈​"
+	arrow := "⏫"
 	if delta < 0 {
-		chart = "📉​"
+		arrow = "⏬"
 		delta = -delta
 	}
-	return fmt.Sprintf(" (%s %.2f)", chart, delta)
+	return fmt.Sprintf(" (%s %.2f)", arrow, delta)
 }
 
 func ratioEmoji(ratio float64) string {
