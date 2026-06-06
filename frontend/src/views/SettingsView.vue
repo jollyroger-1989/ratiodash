@@ -744,8 +744,24 @@ onMounted(async () => {
 }
 
 @media (max-width: 760px) {
+  .card-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1rem;
+  }
+
+  .card-header-row .section-title {
+    margin-bottom: 0.4rem;
+  }
+
+  .card-header-row .section-subtitle {
+    margin-bottom: 0;
+  }
+
+  .add-notifier-btn,
   .add-api-client-btn {
     width: 100%;
+    white-space: normal;
   }
 }
 </style>
