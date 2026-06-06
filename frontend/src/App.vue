@@ -13,16 +13,16 @@
       </RouterLink>
 
       <nav class="sidebar-nav">
-        <RouterLink to="/" class="sidebar-link" :data-tip="$t('nav.home')">
+        <RouterLink to="/" class="sidebar-link" :data-tip="$t('nav.home')" @click="sidebarOpen = false">
           <font-awesome-icon :icon="['fas', 'house']" />
         </RouterLink>
-        <RouterLink to="/trackers" class="sidebar-link" :data-tip="$t('nav.trackers')">
+        <RouterLink to="/trackers" class="sidebar-link" :data-tip="$t('nav.trackers')" @click="sidebarOpen = false">
           <font-awesome-icon :icon="['fas', 'chart-bar']" />
         </RouterLink>
-        <RouterLink to="/reports" class="sidebar-link" :data-tip="$t('nav.reports')">
+        <RouterLink to="/reports" class="sidebar-link" :data-tip="$t('nav.reports')" @click="sidebarOpen = false">
           <font-awesome-icon :icon="['fas', 'envelope']" />
         </RouterLink>
-        <RouterLink to="/alerts" class="sidebar-link" :data-tip="$t('nav.alerts')">
+        <RouterLink to="/alerts" class="sidebar-link" :data-tip="$t('nav.alerts')" @click="sidebarOpen = false">
           <font-awesome-icon :icon="['fas', 'bell']" />
         </RouterLink>
       </nav>
@@ -35,7 +35,7 @@
           @click="setLocale(lang)"
         >{{ lang.toUpperCase() }}</button>
 
-        <RouterLink to="/settings" class="sidebar-link" :data-tip="$t('nav.settings')">
+        <RouterLink to="/settings" class="sidebar-link" :data-tip="$t('nav.settings')" @click="sidebarOpen = false">
           <font-awesome-icon :icon="['fas', 'gear']" />
         </RouterLink>
 
@@ -211,27 +211,34 @@ function logout() {
 }
 
 .app-sidebar [data-tip]::after {
-  content: attr(data-tip);
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--tooltip-bg);
-  border: 1px solid var(--border-bright);
-  color: var(--text);
-  padding: 0.25rem 0.6rem;
-  border-radius: 5px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 100;
+  display: none;
 }
 
-.app-sidebar [data-tip]:hover::after {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .app-sidebar [data-tip]::after {
+    content: attr(data-tip);
+    display: block;
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--tooltip-bg);
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 100;
+  }
+
+  .app-sidebar [data-tip]:hover::after {
+    opacity: 1;
+  }
 }
 
 /* ── Footer ───────────────────────────────────────────── */
