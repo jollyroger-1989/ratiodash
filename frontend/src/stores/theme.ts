@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
-export type ThemeId = 'nebula' | 'light' | 'tokyo-night' | 'dracula'
+export type ThemeId = 'nebula' | 'light' | 'tokyo-night' | 'dracula' | 'monokai-pro'
 
 export interface ThemeOption {
   id: ThemeId
@@ -30,13 +30,18 @@ export const themes: ThemeOption[] = [
     labelKey: 'settings.theme.dracula',
     swatches: ['#282a36', '#bd93f9', '#ff79c6'],
   },
+  {
+    id: 'monokai-pro',
+    labelKey: 'settings.theme.monokai-pro',
+    swatches: ['#2d2a2e', '#a9dc76', '#ff6188'],
+  },
 ]
 
 export const useThemeStore = defineStore('theme', () => {
   const rawStored = localStorage.getItem('theme')
   const stored = rawStored === 'darcula' ? 'dracula' : rawStored
   const currentTheme = ref<ThemeId>(
-    stored === 'nebula' || stored === 'light' || stored === 'tokyo-night' || stored === 'dracula'
+    stored === 'nebula' || stored === 'light' || stored === 'tokyo-night' || stored === 'dracula' || stored === 'monokai-pro'
       ? stored
       : 'nebula'
   )

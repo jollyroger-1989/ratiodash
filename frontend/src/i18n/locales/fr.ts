@@ -182,6 +182,7 @@ export default {
       light: 'Clair',
       'tokyo-night': 'Tokyo Night',
       dracula: 'Dracula',
+      'monokai-pro': 'Monokai Pro',
     },
     credentials: {
       title: 'Modifier les identifiants',
