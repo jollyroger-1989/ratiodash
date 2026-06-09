@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -26,8 +27,9 @@ type GetDashboardOutput struct {
 }
 
 type GetTrackerHistoryInput struct {
-	TrackerID uint `path:"tracker_id"`
-	Limit     int  `query:"limit" doc:"Maximum number of snapshots to return (default 50)"`
+	TrackerID uint   `path:"tracker_id"`
+	Limit     int    `query:"limit" doc:"Maximum number of snapshots to return (default 50). Ignored when start_date is set."`
+	StartDate string `query:"start_date" doc:"Return all snapshots from this date onwards (YYYY-MM-DD). When set, limit is ignored."`
 }
 type GetTrackerHistoryOutput struct {
 	Body []domain.TrackerStats
@@ -58,6 +60,17 @@ func (h *StatsHandler) GetDashboard(ctx context.Context, _ *struct{}) (*GetDashb
 }
 
 func (h *StatsHandler) GetTrackerHistory(ctx context.Context, input *GetTrackerHistoryInput) (*GetTrackerHistoryOutput, error) {
+	if input.StartDate != "" {
+		since, err := time.Parse(time.DateOnly, input.StartDate)
+		if err != nil {
+			return nil, huma.Error422UnprocessableEntity("start_date must be in YYYY-MM-DD format")
+		}
+		stats, err := h.service.GetHistorySince(input.TrackerID, since)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("failed to load history")
+		}
+		return &GetTrackerHistoryOutput{Body: stats}, nil
+	}
 	limit := input.Limit
 	if limit <= 0 {
 		limit = 50

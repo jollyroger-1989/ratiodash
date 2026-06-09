@@ -30,6 +30,8 @@ type GlobalStatsPoint struct {
 // StatsRepository is the persistence abstraction for TrackerStats.
 type StatsRepository interface {
 	FindByTrackerID(trackerID uint, limit int) ([]TrackerStats, error)
+	// FindByTrackerIDSince returns all snapshots for trackerID with fetched_at >= since, ordered DESC.
+	FindByTrackerIDSince(trackerID uint, since time.Time) ([]TrackerStats, error)
 	FindLatestByTrackerID(trackerID uint) (*TrackerStats, error)
 	FindGlobalHistory(limit int) ([]GlobalStatsPoint, error)
 	// FindLatestAll returns the most recent snapshot for every tracker.
@@ -46,6 +48,8 @@ type StatsRepository interface {
 // StatsService is the business-logic abstraction for TrackerStats queries.
 type StatsService interface {
 	GetHistory(trackerID uint, limit int) ([]TrackerStats, error)
+	// GetHistorySince returns all snapshots for trackerID with fetched_at >= since.
+	GetHistorySince(trackerID uint, since time.Time) ([]TrackerStats, error)
 	GetLatest(trackerID uint) (*TrackerStats, error)
 	GetGlobalHistory(limit int) ([]GlobalStatsPoint, error)
 	// GetDashboard returns all trackers paired with their latest snapshot (nil if none yet).

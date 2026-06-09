@@ -406,6 +406,65 @@ func (_c *MockStatsRepository_FindNearestAtOrBefore_Call) RunAndReturn(run func(
 	return _c
 }
 
+// FindByTrackerIDSince provides a mock function with given fields: trackerID, since
+func (_m *MockStatsRepository) FindByTrackerIDSince(trackerID uint, since time.Time) ([]domain.TrackerStats, error) {
+	ret := _m.Called(trackerID, since)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByTrackerIDSince")
+	}
+
+	var r0 []domain.TrackerStats
+	var r1 error
+	if rf, ok := ret.Get(0).(func(uint, time.Time) ([]domain.TrackerStats, error)); ok {
+		return rf(trackerID, since)
+	}
+	if rf, ok := ret.Get(0).(func(uint, time.Time) []domain.TrackerStats); ok {
+		r0 = rf(trackerID, since)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.TrackerStats)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(uint, time.Time) error); ok {
+		r1 = rf(trackerID, since)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockStatsRepository_FindByTrackerIDSince_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByTrackerIDSince'
+type MockStatsRepository_FindByTrackerIDSince_Call struct {
+	*mock.Call
+}
+
+// FindByTrackerIDSince is a helper method to define mock.On call
+//   - trackerID uint
+//   - since time.Time
+func (_e *MockStatsRepository_Expecter) FindByTrackerIDSince(trackerID interface{}, since interface{}) *MockStatsRepository_FindByTrackerIDSince_Call {
+	return &MockStatsRepository_FindByTrackerIDSince_Call{Call: _e.mock.On("FindByTrackerIDSince", trackerID, since)}
+}
+
+func (_c *MockStatsRepository_FindByTrackerIDSince_Call) Run(run func(trackerID uint, since time.Time)) *MockStatsRepository_FindByTrackerIDSince_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(uint), args[1].(time.Time))
+	})
+	return _c
+}
+
+func (_c *MockStatsRepository_FindByTrackerIDSince_Call) Return(_a0 []domain.TrackerStats, _a1 error) *MockStatsRepository_FindByTrackerIDSince_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockStatsRepository_FindByTrackerIDSince_Call) RunAndReturn(run func(uint, time.Time) ([]domain.TrackerStats, error)) *MockStatsRepository_FindByTrackerIDSince_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockStatsRepository creates a new instance of MockStatsRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockStatsRepository(t interface {

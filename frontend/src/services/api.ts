@@ -149,8 +149,13 @@ export const statsApi = {
     return http.get<DashboardEntry[]>('/trackers/stats').then((r) => r.data)
   },
 
-  getHistory(trackerId: number): Promise<TrackerStats[]> {
-    return http.get<TrackerStats[]>(`/trackers/${trackerId}/stats`).then((r) => r.data)
+  getHistory(trackerId: number, params?: { startDate?: string; limit?: number }): Promise<TrackerStats[]> {
+    const p: Record<string, string | number> = {}
+    if (params?.startDate) p.start_date = params.startDate
+    if (params?.limit !== undefined) p.limit = params.limit
+    return http
+      .get<TrackerStats[]>(`/trackers/${trackerId}/stats`, { params: Object.keys(p).length ? p : undefined })
+      .then((r) => r.data)
   },
 
   getLatest(trackerId: number): Promise<TrackerStats> {

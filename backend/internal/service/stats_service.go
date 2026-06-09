@@ -1,6 +1,10 @@
 package service
 
-import "github.com/jose/ratiodash/internal/domain"
+import (
+	"time"
+
+	"github.com/jose/ratiodash/internal/domain"
+)
 
 type statsService struct {
 	repo        domain.StatsRepository
@@ -13,6 +17,10 @@ func NewStatsService(repo domain.StatsRepository, trackerRepo domain.TrackerRepo
 
 func (s *statsService) GetHistory(trackerID uint, limit int) ([]domain.TrackerStats, error) {
 	return s.repo.FindByTrackerID(trackerID, limit)
+}
+
+func (s *statsService) GetHistorySince(trackerID uint, since time.Time) ([]domain.TrackerStats, error) {
+	return s.repo.FindByTrackerIDSince(trackerID, since)
 }
 
 func (s *statsService) GetLatest(trackerID uint) (*domain.TrackerStats, error) {

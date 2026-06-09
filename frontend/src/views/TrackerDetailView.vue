@@ -36,19 +36,13 @@
               v-for="p in periods"
               :key="p.label"
               :class="['period-btn', { active: activePeriod === p.label }]"
-              @click="activePeriod = p.label"
+              @click="selectPeriod(p.label)"
             >{{ p.title }}</button>
           </div>
         </div>
         <Line :data="chartData" :options="chartOptions" class="chart" />
       </div>
 
-      <!-- History table -->
-      <div class="card">
-        <h2>{{ $t('history.title') }}</h2>
-        <p v-if="!history.length" class="muted">{{ $t('history.noSnapshots') }}</p>
-        <HistoryTable v-else :history="history" @delete="deleteEntry" />
-      </div>
     </template>
   </div>
 </template>
@@ -74,7 +68,6 @@ import { trackersApi, statsApi } from '@/services/api'
 import type { Tracker, TrackerStats } from '@/services/api'
 import TrackerFormModal from '@/components/TrackerFormModal.vue'
 import StatsGrid from '@/components/StatsGrid.vue'
-import HistoryTable from '@/components/HistoryTable.vue'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -88,13 +81,35 @@ const history = ref<TrackerStats[]>([])
 const loading = ref(true)
 const error = ref('')
 
+// --- Period filter ---
+const periods = computed(() => [
+  { label: '7d',  days: 7,  title: '7d' },
+  { label: '30d', days: 30, title: '30d' },
+  { label: '90d', days: 90, title: '90d' },
+  { label: 'All', days: 0,  title: t('detail.periods.all') },
+])
+const activePeriod = ref('7d')
+
+async function loadHistory() {
+  const p = periods.value.find((p) => p.label === activePeriod.value)!
+  const params: Parameters<typeof statsApi.getHistory>[1] = p.days > 0
+    ? { startDate: new Date(Date.now() - p.days * 86_400_000).toISOString().slice(0, 10) }
+    : { startDate: '2000-01-01' }
+  history.value = await statsApi.getHistory(trackerId, params)
+}
+
+async function selectPeriod(label: string) {
+  activePeriod.value = label
+  await loadHistory()
+}
+
 // --- Refresh ---
 const refreshing = ref(false)
 async function doRefresh() {
   refreshing.value = true
   try {
     await trackersApi.refresh(trackerId)
-    history.value = await statsApi.getHistory(trackerId)
+    await loadHistory()
   } catch {
     error.value = t('detail.errorLoad')
   } finally {
@@ -107,30 +122,14 @@ const showForm = ref(false)
 
 async function onSaved(updated: Tracker) {
   tracker.value = updated
-  history.value = await statsApi.getHistory(trackerId)
+  await loadHistory()
 }
 
 const latest = computed(() => history.value[0] ?? null)
 
-// --- Period filter ---
-const periods = computed(() => [
-  { label: '7d',  days: 7,  title: '7d' },
-  { label: '30d', days: 30, title: '30d' },
-  { label: '90d', days: 90, title: '90d' },
-  { label: 'All', days: 0,  title: t('detail.periods.all') },
-])
-const activePeriod = ref('30d')
-
-const filteredHistory = computed(() => {
-  const p = periods.value.find((p) => p.label === activePeriod.value)!
-  if (!p.days) return history.value
-  const cutoff = Date.now() - p.days * 86_400_000
-  return history.value.filter((r) => new Date(r.fetched_at).getTime() >= cutoff)
-})
-
 // --- Chart ---
 const chartData = computed(() => {
-  const rows = [...filteredHistory.value].reverse() // oldest first
+  const rows = [...history.value].reverse() // oldest first
   return {
     labels: rows.map((r) => d(new Date(r.fetched_at), 'short')),
     datasets: [
@@ -199,25 +198,14 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   },
 }))
 
-// --- Helpers ---
-async function deleteEntry(statId: number) {
-  try {
-    await statsApi.deleteEntry(trackerId, statId)
-    history.value = history.value.filter((r) => r.id !== statId)
-  } catch {
-    error.value = t('detail.errorDelete')
-  }
-}
-
 // --- Load ---
 onMounted(async () => {
   try {
-    const [s, h] = await Promise.all([
+    const [s] = await Promise.all([
       trackersApi.getById(trackerId),
-      statsApi.getHistory(trackerId),
+      loadHistory(),
     ])
     tracker.value = s
-    history.value = h // already newest-first from API
   } catch {
     error.value = t('detail.errorLoad')
   } finally {

@@ -30,6 +30,14 @@ func (r *statsRepository) FindByTrackerID(trackerID uint, limit int) ([]domain.T
 	return stats, nil
 }
 
+func (r *statsRepository) FindByTrackerIDSince(trackerID uint, since time.Time) ([]domain.TrackerStats, error) {
+	var stats []domain.TrackerStats
+	if err := r.db.Where("tracker_id = ? AND fetched_at >= ?", trackerID, since).Order("fetched_at DESC").Find(&stats).Error; err != nil {
+		return nil, fmt.Errorf("finding stats for tracker %d since %s: %w", trackerID, since.Format(time.DateOnly), err)
+	}
+	return stats, nil
+}
+
 func (r *statsRepository) FindLatestByTrackerID(trackerID uint) (*domain.TrackerStats, error) {
 	var s domain.TrackerStats
 	err := r.db.Where("tracker_id = ?", trackerID).Order("fetched_at DESC").First(&s).Error
