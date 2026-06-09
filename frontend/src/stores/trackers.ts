@@ -5,14 +5,21 @@ import {
   type Tracker,
   type CreateTrackerInput,
   type UpdateTrackerInput,
-  type DashboardEntry
+  type DashboardEntry,
+  type SortBy,
+  type SortOrder
 } from '@/services/api'
+
+const STORAGE_SORT_BY = 'trackers:sort_by'
+const STORAGE_SORT_ORDER = 'trackers:sort_order'
 
 export const useTrackersStore = defineStore('trackers', () => {
   const trackers = ref<Tracker[]>([])
   const dashboard = ref<DashboardEntry[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const sortBy = ref<SortBy | ''>((localStorage.getItem(STORAGE_SORT_BY) as SortBy | '') || '')
+  const sortOrder = ref<SortOrder>((localStorage.getItem(STORAGE_SORT_ORDER) as SortOrder) || 'asc')
 
   async function fetchAll() {
     loading.value = true
@@ -30,7 +37,10 @@ export const useTrackersStore = defineStore('trackers', () => {
     loading.value = true
     error.value = null
     try {
-      const allTrackers = await trackersApi.getAll()
+      const params = sortBy.value
+        ? { sort_by: sortBy.value, sort_order: sortOrder.value }
+        : undefined
+      const allTrackers = await trackersApi.getAll(params)
       dashboard.value = allTrackers.map((tracker) => ({
         tracker,
         stats: tracker.stats ?? null
@@ -40,6 +50,19 @@ export const useTrackersStore = defineStore('trackers', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  async function setSort(by: SortBy | '', order: SortOrder) {
+    sortBy.value = by
+    sortOrder.value = order
+    if (by) {
+      localStorage.setItem(STORAGE_SORT_BY, by)
+      localStorage.setItem(STORAGE_SORT_ORDER, order)
+    } else {
+      localStorage.removeItem(STORAGE_SORT_BY)
+      localStorage.removeItem(STORAGE_SORT_ORDER)
+    }
+    await fetchDashboard()
   }
 
   async function create(input: CreateTrackerInput) {
@@ -80,5 +103,5 @@ export const useTrackersStore = defineStore('trackers', () => {
     await fetchDashboard()
   }
 
-  return { trackers, dashboard, loading, error, fetchAll, fetchDashboard, create, update, remove, refresh }
+  return { trackers, dashboard, loading, error, sortBy, sortOrder, fetchAll, fetchDashboard, setSort, create, update, remove, refresh }
 })

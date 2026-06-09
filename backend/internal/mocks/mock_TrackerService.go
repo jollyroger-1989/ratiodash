@@ -181,9 +181,9 @@ func (_c *MockTrackerService_GetActive_Call) RunAndReturn(run func() ([]domain.T
 	return _c
 }
 
-// GetAll provides a mock function with no fields
-func (_m *MockTrackerService) GetAll() ([]domain.Tracker, error) {
-	ret := _m.Called()
+// GetAll provides a mock function with given fields: opts
+func (_m *MockTrackerService) GetAll(opts *domain.TrackerSortOptions) ([]domain.Tracker, error) {
+	ret := _m.Called(opts)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAll")
@@ -191,19 +191,19 @@ func (_m *MockTrackerService) GetAll() ([]domain.Tracker, error) {
 
 	var r0 []domain.Tracker
 	var r1 error
-	if rf, ok := ret.Get(0).(func() ([]domain.Tracker, error)); ok {
-		return rf()
+	if rf, ok := ret.Get(0).(func(*domain.TrackerSortOptions) ([]domain.Tracker, error)); ok {
+		return rf(opts)
 	}
-	if rf, ok := ret.Get(0).(func() []domain.Tracker); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(*domain.TrackerSortOptions) []domain.Tracker); ok {
+		r0 = rf(opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Tracker)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(*domain.TrackerSortOptions) error); ok {
+		r1 = rf(opts)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -217,13 +217,17 @@ type MockTrackerService_GetAll_Call struct {
 }
 
 // GetAll is a helper method to define mock.On call
-func (_e *MockTrackerService_Expecter) GetAll() *MockTrackerService_GetAll_Call {
-	return &MockTrackerService_GetAll_Call{Call: _e.mock.On("GetAll")}
+func (_e *MockTrackerService_Expecter) GetAll(opts interface{}) *MockTrackerService_GetAll_Call {
+	return &MockTrackerService_GetAll_Call{Call: _e.mock.On("GetAll", opts)}
 }
 
-func (_c *MockTrackerService_GetAll_Call) Run(run func()) *MockTrackerService_GetAll_Call {
+func (_c *MockTrackerService_GetAll_Call) Run(run func(opts *domain.TrackerSortOptions)) *MockTrackerService_GetAll_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var opts *domain.TrackerSortOptions
+		if v := args.Get(0); v != nil {
+			opts = v.(*domain.TrackerSortOptions)
+		}
+		run(opts)
 	})
 	return _c
 }
@@ -233,7 +237,7 @@ func (_c *MockTrackerService_GetAll_Call) Return(_a0 []domain.Tracker, _a1 error
 	return _c
 }
 
-func (_c *MockTrackerService_GetAll_Call) RunAndReturn(run func() ([]domain.Tracker, error)) *MockTrackerService_GetAll_Call {
+func (_c *MockTrackerService_GetAll_Call) RunAndReturn(run func(*domain.TrackerSortOptions) ([]domain.Tracker, error)) *MockTrackerService_GetAll_Call {
 	_c.Call.Return(run)
 	return _c
 }

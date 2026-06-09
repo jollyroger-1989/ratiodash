@@ -263,7 +263,7 @@ func TestReportService_Send(t *testing.T) {
 		repo := mocks.NewMockReportRepository(t)
 		trackers := mocks.NewMockTrackerService(t)
 		repo.EXPECT().FindByID(uint(1)).Return(makeReport(1, "R"), nil)
-		trackers.EXPECT().GetAll().Return(nil, errors.New("db error"))
+		trackers.EXPECT().GetAll(mock.Anything).Return(nil, errors.New("db error"))
 
 		svc := newReportService(t, repo,
 			mocks.NewMockNotifierConfigRepository(t),
@@ -281,7 +281,7 @@ func TestReportService_Send(t *testing.T) {
 		trackers := mocks.NewMockTrackerService(t)
 		statsRepo := mocks.NewMockStatsRepository(t)
 		repo.EXPECT().FindByID(uint(1)).Return(makeReport(1, "R"), nil)
-		trackers.EXPECT().GetAll().Return([]domain.Tracker{}, nil)
+		trackers.EXPECT().GetAll(mock.Anything).Return([]domain.Tracker{}, nil)
 		statsRepo.EXPECT().FindLatestAll().Return(nil, errors.New("db error"))
 
 		svc := newReportService(t, repo,
@@ -307,7 +307,7 @@ func TestReportService_Send(t *testing.T) {
 		tracker := domain.Tracker{ID: 10, Name: "Alpha"}
 
 		repo.EXPECT().FindByID(uint(1)).Return(report, nil)
-		trackers.EXPECT().GetAll().Return([]domain.Tracker{tracker}, nil)
+		trackers.EXPECT().GetAll(mock.Anything).Return([]domain.Tracker{tracker}, nil)
 		statsRepo.EXPECT().FindLatestAll().Return([]domain.TrackerStats{
 			{TrackerID: 10, Uploaded: 1024 * 1024 * 1024, Downloaded: 512 * 1024 * 1024, Ratio: 2.0},
 		}, nil)
@@ -341,7 +341,7 @@ func TestReportService_Send(t *testing.T) {
 		report := makeReport(1, "R", nc)
 
 		repo.EXPECT().FindByID(uint(1)).Return(report, nil)
-		trackers.EXPECT().GetAll().Return([]domain.Tracker{}, nil)
+		trackers.EXPECT().GetAll(mock.Anything).Return([]domain.Tracker{}, nil)
 		statsRepo.EXPECT().FindLatestAll().Return(nil, nil)
 		builder.EXPECT().Build("bad", "{}").Return(nil, errors.New("unknown notifier"))
 		repo.EXPECT().UpdateLastSentAt(uint(1), mock.AnythingOfType("time.Time")).Return(nil)
@@ -375,7 +375,7 @@ func TestReportService_Send(t *testing.T) {
 		tracker := domain.Tracker{ID: 5, Name: "Beta"}
 
 		repo.EXPECT().FindByID(uint(1)).Return(report, nil)
-		trackers.EXPECT().GetAll().Return([]domain.Tracker{tracker}, nil)
+		trackers.EXPECT().GetAll(mock.Anything).Return([]domain.Tracker{tracker}, nil)
 		statsRepo.EXPECT().FindLatestAll().Return([]domain.TrackerStats{
 			{TrackerID: 5, Uploaded: 2048, Downloaded: 1024, Ratio: 2.0},
 		}, nil)
@@ -410,7 +410,7 @@ func TestReportService_Send(t *testing.T) {
 		report := makeReport(1, "R", nc)
 
 		repo.EXPECT().FindByID(uint(1)).Return(report, nil)
-		trackers.EXPECT().GetAll().Return([]domain.Tracker{{ID: 99, Name: "NoStats"}}, nil)
+		trackers.EXPECT().GetAll(mock.Anything).Return([]domain.Tracker{{ID: 99, Name: "NoStats"}}, nil)
 		statsRepo.EXPECT().FindLatestAll().Return([]domain.TrackerStats{}, nil)
 		builder.EXPECT().Build("ntfy", "{}").Return(notifier, nil)
 		notifier.EXPECT().Notify(mock.Anything, mock.MatchedBy(func(n domain.Notification) bool {
@@ -448,7 +448,7 @@ func TestReportService_Send(t *testing.T) {
 		beta := domain.Tracker{ID: 2, Name: "Beta"}
 
 		repo.EXPECT().FindByID(uint(1)).Return(report, nil)
-		trackers.EXPECT().GetAll().Return([]domain.Tracker{alpha, beta}, nil)
+		trackers.EXPECT().GetAll(mock.Anything).Return([]domain.Tracker{alpha, beta}, nil)
 		statsRepo.EXPECT().FindLatestAll().Return([]domain.TrackerStats{
 			{TrackerID: 1, Uploaded: 2000, Downloaded: 500, Ratio: 4.0},
 			{TrackerID: 2, Uploaded: 1000, Downloaded: 1000, Ratio: 1.0},

@@ -25,6 +25,11 @@ func NewTrackerHandler(svc domain.TrackerService, stats domain.StatsService, ref
 
 // --- I/O types ---
 
+type ListTrackersInput struct {
+	SortBy    string `query:"sort_by"    enum:"ratio,uploaded,downloaded" doc:"Field to sort by"`
+	SortOrder string `query:"sort_order" enum:"asc,desc"               doc:"Sort direction (default: asc)"`
+}
+
 type ListTrackersOutput struct {
 	Body []domain.Tracker
 }
@@ -75,8 +80,12 @@ type TestTrackerByIDInput struct {
 
 // --- Handlers ---
 
-func (h *TrackerHandler) ListTrackers(ctx context.Context, _ *struct{}) (*ListTrackersOutput, error) {
-	trackers, err := h.service.GetAll()
+func (h *TrackerHandler) ListTrackers(ctx context.Context, input *ListTrackersInput) (*ListTrackersOutput, error) {
+	opts := &domain.TrackerSortOptions{
+		SortBy:    input.SortBy,
+		SortOrder: input.SortOrder,
+	}
+	trackers, err := h.service.GetAll(opts)
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to list trackers")
 	}
@@ -95,6 +104,7 @@ func (h *TrackerHandler) ListTrackers(ctx context.Context, _ *struct{}) (*ListTr
 	for i := range trackers {
 		trackers[i].Stats = latestByTrackerID[trackers[i].ID]
 	}
+
 	return &ListTrackersOutput{Body: trackers}, nil
 }
 

@@ -100,9 +100,17 @@ export interface DashboardEntry {
 
 // ---- API helpers ----
 
+export type SortBy = 'ratio' | 'uploaded' | 'downloaded'
+export type SortOrder = 'asc' | 'desc'
+
+export interface ListTrackersParams {
+  sort_by?: SortBy
+  sort_order?: SortOrder
+}
+
 export const trackersApi = {
-  getAll(): Promise<Tracker[]> {
-    return http.get<Tracker[]>('/trackers').then((r) => r.data)
+  getAll(params?: ListTrackersParams): Promise<Tracker[]> {
+    return http.get<Tracker[]>('/trackers', { params }).then((r) => r.data)
   },
 
   getById(id: number): Promise<Tracker> {

@@ -18,9 +18,31 @@ func NewTrackerRepository(db *gorm.DB) domain.TrackerRepository {
 	return &trackerRepository{db: db}
 }
 
-func (r *trackerRepository) FindAll() ([]domain.Tracker, error) {
+func (r *trackerRepository) FindAll(opts *domain.TrackerSortOptions) ([]domain.Tracker, error) {
 	var trackers []domain.Tracker
-	if err := r.db.Find(&trackers).Error; err != nil {
+	query := r.db
+
+	if opts != nil && opts.SortBy != "" {
+		allowedColumns := []string{"ratio", "uploaded", "downloaded"}
+		col := ""
+		for _, c := range allowedColumns {
+			if c == opts.SortBy {
+				col = c
+				break
+			}
+		}
+		if col != "" {
+			dir := "ASC"
+			if opts.SortOrder == "desc" {
+				dir = "DESC"
+			}
+			query = query.
+				Joins("LEFT JOIN tracker_stats ON tracker_stats.id = (SELECT MAX(id) FROM tracker_stats ts WHERE ts.tracker_id = trackers.id)").
+				Order("COALESCE(tracker_stats." + col + ", 0) " + dir)
+		}
+	}
+
+	if err := query.Find(&trackers).Error; err != nil {
 		return nil, fmt.Errorf("finding all trackers: %w", err)
 	}
 	return trackers, nil

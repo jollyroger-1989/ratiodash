@@ -19,11 +19,11 @@ func ptr[T any](v T) *T { return &v }
 func TestTrackerService_GetAll(t *testing.T) {
 	t.Run("returns trackers with redacted credentials", func(t *testing.T) {
 		repo := mocks.NewMockTrackerRepository(t)
-		repo.EXPECT().FindAll().Return([]domain.Tracker{
+		repo.EXPECT().FindAll(mock.Anything).Return([]domain.Tracker{
 			{ID: 1, Name: "Alpha", Credentials: `{"api_key":"secret","username":"user"}`},
 		}, nil)
 
-		trackers, err := service.NewTrackerService(repo, mocks.NewMockScraperRegistry(t)).GetAll()
+		trackers, err := service.NewTrackerService(repo, mocks.NewMockScraperRegistry(t)).GetAll(nil)
 
 		require.NoError(t, err)
 		require.Len(t, trackers, 1)
@@ -32,9 +32,9 @@ func TestTrackerService_GetAll(t *testing.T) {
 
 	t.Run("returns empty slice when none exist", func(t *testing.T) {
 		repo := mocks.NewMockTrackerRepository(t)
-		repo.EXPECT().FindAll().Return([]domain.Tracker{}, nil)
+		repo.EXPECT().FindAll(mock.Anything).Return([]domain.Tracker{}, nil)
 
-		trackers, err := service.NewTrackerService(repo, mocks.NewMockScraperRegistry(t)).GetAll()
+		trackers, err := service.NewTrackerService(repo, mocks.NewMockScraperRegistry(t)).GetAll(nil)
 
 		require.NoError(t, err)
 		assert.Empty(t, trackers)
@@ -42,9 +42,9 @@ func TestTrackerService_GetAll(t *testing.T) {
 
 	t.Run("propagates repository error", func(t *testing.T) {
 		repo := mocks.NewMockTrackerRepository(t)
-		repo.EXPECT().FindAll().Return(nil, errors.New("db error"))
+		repo.EXPECT().FindAll(mock.Anything).Return(nil, errors.New("db error"))
 
-		_, err := service.NewTrackerService(repo, mocks.NewMockScraperRegistry(t)).GetAll()
+		_, err := service.NewTrackerService(repo, mocks.NewMockScraperRegistry(t)).GetAll(nil)
 
 		assert.Error(t, err)
 	})

@@ -244,7 +244,7 @@ func TestReportHandler_Integration(t *testing.T) {
 		sched := mocks.NewMockReportScheduler(t)
 		repo := repository.NewReportRepository(db)
 		trackerSvc := mocks.NewMockTrackerService(t)
-		trackerSvc.EXPECT().GetAll().Return([]domain.Tracker{}, nil).Maybe()
+		trackerSvc.EXPECT().GetAll(mock.Anything).Return([]domain.Tracker{}, nil).Maybe()
 		svc := service.NewReportService(
 			repo,
 			repository.NewNotifierConfigRepository(db),

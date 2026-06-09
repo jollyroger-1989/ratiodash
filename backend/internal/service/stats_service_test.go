@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/jose/ratiodash/internal/domain"
@@ -126,7 +127,7 @@ func TestStatsService_GetDashboard(t *testing.T) {
 		statsRepo := mocks.NewMockStatsRepository(t)
 		trackerRepo := mocks.NewMockTrackerRepository(t)
 
-		trackerRepo.EXPECT().FindAll().Return([]domain.Tracker{
+		trackerRepo.EXPECT().FindAll(mock.Anything).Return([]domain.Tracker{
 			{ID: 1, Name: "Alpha", Credentials: `{"api_key":"s"}`},
 			{ID: 2, Name: "Beta", Credentials: "{}"},
 		}, nil)
@@ -147,7 +148,7 @@ func TestStatsService_GetDashboard(t *testing.T) {
 		statsRepo := mocks.NewMockStatsRepository(t)
 		trackerRepo := mocks.NewMockTrackerRepository(t)
 
-		trackerRepo.EXPECT().FindAll().Return([]domain.Tracker{
+		trackerRepo.EXPECT().FindAll(mock.Anything).Return([]domain.Tracker{
 			{ID: 1, Name: "Alpha", Credentials: `{"api_key":"secret","username":"user"}`},
 		}, nil)
 		statsRepo.EXPECT().FindLatestAll().Return([]domain.TrackerStats{}, nil)
@@ -162,7 +163,7 @@ func TestStatsService_GetDashboard(t *testing.T) {
 	t.Run("propagates trackerRepo error", func(t *testing.T) {
 		statsRepo := mocks.NewMockStatsRepository(t)
 		trackerRepo := mocks.NewMockTrackerRepository(t)
-		trackerRepo.EXPECT().FindAll().Return(nil, errors.New("db error"))
+		trackerRepo.EXPECT().FindAll(mock.Anything).Return(nil, errors.New("db error"))
 
 		_, err := service.NewStatsService(statsRepo, trackerRepo).GetDashboard()
 
@@ -172,7 +173,7 @@ func TestStatsService_GetDashboard(t *testing.T) {
 	t.Run("propagates statsRepo error", func(t *testing.T) {
 		statsRepo := mocks.NewMockStatsRepository(t)
 		trackerRepo := mocks.NewMockTrackerRepository(t)
-		trackerRepo.EXPECT().FindAll().Return([]domain.Tracker{{ID: 1}}, nil)
+		trackerRepo.EXPECT().FindAll(mock.Anything).Return([]domain.Tracker{{ID: 1}}, nil)
 		statsRepo.EXPECT().FindLatestAll().Return(nil, errors.New("db error"))
 
 		_, err := service.NewStatsService(statsRepo, trackerRepo).GetDashboard()

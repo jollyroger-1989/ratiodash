@@ -34,6 +34,15 @@ export default {
     title: 'Trackers',
     addSite: '+ Ajouter un tracker',
     noSites: "Aucun tracker pour l'instant. Ajoutez-en un ci-dessus.",
+    sort: {
+      label: 'Trier par',
+      default: 'Défaut',
+      ratio: 'Ratio',
+      uploaded: 'Envoi',
+      downloaded: 'Réception',
+      asc: 'Asc',
+      desc: 'Desc',
+    },
     modal: {
       title: 'Ajouter un tracker',
       editTitle: 'Modifier le tracker',

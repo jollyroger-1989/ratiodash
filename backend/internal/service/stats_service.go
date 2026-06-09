@@ -28,7 +28,7 @@ func (s *statsService) DeleteEntry(statID uint, trackerID uint) error {
 }
 
 func (s *statsService) GetDashboard() ([]domain.DashboardEntry, error) {
-	trackers, err := s.trackerRepo.FindAll()
+	trackers, err := s.trackerRepo.FindAll(nil)
 	if err != nil {
 		return nil, err
 	}

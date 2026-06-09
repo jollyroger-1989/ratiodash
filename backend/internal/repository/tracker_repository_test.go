@@ -24,7 +24,7 @@ func TestTrackerRepository_FindAll(t *testing.T) {
 	t.Run("returns empty slice when no trackers exist", func(t *testing.T) {
 		repo := repository.NewTrackerRepository(testutil.NewDB(t))
 
-		trackers, err := repo.FindAll()
+		trackers, err := repo.FindAll(nil)
 
 		require.NoError(t, err)
 		assert.Equal(t, []domain.Tracker{}, trackers)
@@ -35,7 +35,7 @@ func TestTrackerRepository_FindAll(t *testing.T) {
 		require.NoError(t, repo.Create(newTracker("Alpha")))
 		require.NoError(t, repo.Create(newTracker("Beta")))
 
-		trackers, err := repo.FindAll()
+		trackers, err := repo.FindAll(nil)
 
 		require.NoError(t, err)
 		assert.Len(t, trackers, 2)
@@ -48,7 +48,7 @@ func TestTrackerRepository_FindAll(t *testing.T) {
 		require.NoError(t, sqlDB.Close())
 		repo := repository.NewTrackerRepository(db)
 
-		_, err = repo.FindAll()
+		_, err = repo.FindAll(nil)
 
 		assert.Error(t, err)
 	})

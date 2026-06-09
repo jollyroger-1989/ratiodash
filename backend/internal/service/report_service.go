@@ -129,7 +129,7 @@ func (s *reportService) Send(ctx context.Context, id uint) error {
 	}
 
 	// Get current stats for all trackers.
-	allTrackers, err := s.trackers.GetAll()
+	allTrackers, err := s.trackers.GetAll(nil)
 	if err != nil {
 		return fmt.Errorf("loading trackers: %w", err)
 	}

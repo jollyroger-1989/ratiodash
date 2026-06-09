@@ -81,6 +81,108 @@ func TestTrackerHandler_List(t *testing.T) {
 	})
 }
 
+func TestTrackerHandler_ListSort(t *testing.T) {
+	// Helper: create a tracker and insert a stats row for it.
+	createWithStats := func(t *testing.T, env trackerTestEnv, name string, uploaded, downloaded int64, ratio float64) {
+		t.Helper()
+		env.refresh.EXPECT().RefreshTracker(mock.Anything, mock.AnythingOfType("uint")).Return(nil).Once()
+		env.sched.EXPECT().Schedule(mock.AnythingOfType("domain.Tracker")).Return(nil).Once()
+		resp := env.api.Do(http.MethodPost, "/api/v1/trackers",
+			map[string]string{"name": name, "scraper_key": "generic", "credentials": "{}", "cron_expr": "@hourly"})
+		require.Equal(t, http.StatusCreated, resp.Code)
+		var created domain.Tracker
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&created))
+		require.NoError(t, env.stats.Create(&domain.TrackerStats{
+			TrackerID:  created.ID,
+			Uploaded:   uploaded,
+			Downloaded: downloaded,
+			Ratio:      ratio,
+		}))
+	}
+
+	t.Run("sort by ratio asc", func(t *testing.T) {
+		env := setupTrackerHandler(t)
+		createWithStats(t, env, "Low", 0, 0, 1.0)
+		createWithStats(t, env, "High", 0, 0, 3.0)
+		createWithStats(t, env, "Mid", 0, 0, 2.0)
+
+		resp := env.api.Do(http.MethodGet, "/api/v1/trackers?sort_by=ratio&sort_order=asc")
+		require.Equal(t, http.StatusOK, resp.Code)
+		var body []domain.Tracker
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		require.Len(t, body, 3)
+		assert.Equal(t, "Low", body[0].Name)
+		assert.Equal(t, "Mid", body[1].Name)
+		assert.Equal(t, "High", body[2].Name)
+	})
+
+	t.Run("sort by ratio desc", func(t *testing.T) {
+		env := setupTrackerHandler(t)
+		createWithStats(t, env, "Low", 0, 0, 1.0)
+		createWithStats(t, env, "High", 0, 0, 3.0)
+		createWithStats(t, env, "Mid", 0, 0, 2.0)
+
+		resp := env.api.Do(http.MethodGet, "/api/v1/trackers?sort_by=ratio&sort_order=desc")
+		require.Equal(t, http.StatusOK, resp.Code)
+		var body []domain.Tracker
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		require.Len(t, body, 3)
+		assert.Equal(t, "High", body[0].Name)
+		assert.Equal(t, "Mid", body[1].Name)
+		assert.Equal(t, "Low", body[2].Name)
+	})
+
+	t.Run("sort by uploaded desc", func(t *testing.T) {
+		env := setupTrackerHandler(t)
+		createWithStats(t, env, "Small", 100, 0, 1.0)
+		createWithStats(t, env, "Big", 1000, 0, 1.0)
+		createWithStats(t, env, "Medium", 500, 0, 1.0)
+
+		resp := env.api.Do(http.MethodGet, "/api/v1/trackers?sort_by=uploaded&sort_order=desc")
+		require.Equal(t, http.StatusOK, resp.Code)
+		var body []domain.Tracker
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		require.Len(t, body, 3)
+		assert.Equal(t, "Big", body[0].Name)
+		assert.Equal(t, "Medium", body[1].Name)
+		assert.Equal(t, "Small", body[2].Name)
+	})
+
+	t.Run("sort by downloaded asc", func(t *testing.T) {
+		env := setupTrackerHandler(t)
+		createWithStats(t, env, "SmallDL", 0, 100, 1.0)
+		createWithStats(t, env, "BigDL", 0, 1000, 1.0)
+		createWithStats(t, env, "MediumDL", 0, 500, 1.0)
+
+		resp := env.api.Do(http.MethodGet, "/api/v1/trackers?sort_by=downloaded&sort_order=asc")
+		require.Equal(t, http.StatusOK, resp.Code)
+		var body []domain.Tracker
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		require.Len(t, body, 3)
+		assert.Equal(t, "SmallDL", body[0].Name)
+		assert.Equal(t, "MediumDL", body[1].Name)
+		assert.Equal(t, "BigDL", body[2].Name)
+	})
+
+	t.Run("trackers with nil stats sort last in asc", func(t *testing.T) {
+		env := setupTrackerHandler(t)
+		// NoStats has no stats row — should sort to end (value 0 is lowest)
+		env.refresh.EXPECT().RefreshTracker(mock.Anything, mock.AnythingOfType("uint")).Return(nil).Once()
+		env.sched.EXPECT().Schedule(mock.AnythingOfType("domain.Tracker")).Return(nil).Once()
+		env.api.Do(http.MethodPost, "/api/v1/trackers",
+			map[string]string{"name": "NoStats", "scraper_key": "generic", "credentials": "{}", "cron_expr": "@hourly"})
+		createWithStats(t, env, "HasStats", 0, 0, 2.5)
+
+		resp := env.api.Do(http.MethodGet, "/api/v1/trackers?sort_by=ratio&sort_order=asc")
+		require.Equal(t, http.StatusOK, resp.Code)
+		var body []domain.Tracker
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		require.Len(t, body, 2)
+		assert.Equal(t, "NoStats", body[0].Name)
+		assert.Equal(t, "HasStats", body[1].Name)
+	})
+}
+
 func TestTrackerHandler_Get(t *testing.T) {
 	t.Run("returns tracker by ID", func(t *testing.T) {
 		env := setupTrackerHandler(t)

@@ -17,8 +17,8 @@ func NewTrackerService(repo domain.TrackerRepository, registry domain.ScraperReg
 	return &trackerService{repo: repo, registry: registry}
 }
 
-func (s *trackerService) GetAll() ([]domain.Tracker, error) {
-	trackers, err := s.repo.FindAll()
+func (s *trackerService) GetAll(opts *domain.TrackerSortOptions) ([]domain.Tracker, error) {
+	trackers, err := s.repo.FindAll(opts)
 	if err != nil {
 		return nil, err
 	}

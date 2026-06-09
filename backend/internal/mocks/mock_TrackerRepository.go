@@ -169,9 +169,9 @@ func (_c *MockTrackerRepository_FindActive_Call) RunAndReturn(run func() ([]doma
 	return _c
 }
 
-// FindAll provides a mock function with no fields
-func (_m *MockTrackerRepository) FindAll() ([]domain.Tracker, error) {
-	ret := _m.Called()
+// FindAll provides a mock function with given fields: opts
+func (_m *MockTrackerRepository) FindAll(opts *domain.TrackerSortOptions) ([]domain.Tracker, error) {
+	ret := _m.Called(opts)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindAll")
@@ -179,19 +179,19 @@ func (_m *MockTrackerRepository) FindAll() ([]domain.Tracker, error) {
 
 	var r0 []domain.Tracker
 	var r1 error
-	if rf, ok := ret.Get(0).(func() ([]domain.Tracker, error)); ok {
-		return rf()
+	if rf, ok := ret.Get(0).(func(*domain.TrackerSortOptions) ([]domain.Tracker, error)); ok {
+		return rf(opts)
 	}
-	if rf, ok := ret.Get(0).(func() []domain.Tracker); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(*domain.TrackerSortOptions) []domain.Tracker); ok {
+		r0 = rf(opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Tracker)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(*domain.TrackerSortOptions) error); ok {
+		r1 = rf(opts)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -205,13 +205,17 @@ type MockTrackerRepository_FindAll_Call struct {
 }
 
 // FindAll is a helper method to define mock.On call
-func (_e *MockTrackerRepository_Expecter) FindAll() *MockTrackerRepository_FindAll_Call {
-	return &MockTrackerRepository_FindAll_Call{Call: _e.mock.On("FindAll")}
+func (_e *MockTrackerRepository_Expecter) FindAll(opts interface{}) *MockTrackerRepository_FindAll_Call {
+	return &MockTrackerRepository_FindAll_Call{Call: _e.mock.On("FindAll", opts)}
 }
 
-func (_c *MockTrackerRepository_FindAll_Call) Run(run func()) *MockTrackerRepository_FindAll_Call {
+func (_c *MockTrackerRepository_FindAll_Call) Run(run func(opts *domain.TrackerSortOptions)) *MockTrackerRepository_FindAll_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var opts *domain.TrackerSortOptions
+		if v := args.Get(0); v != nil {
+			opts = v.(*domain.TrackerSortOptions)
+		}
+		run(opts)
 	})
 	return _c
 }
@@ -221,7 +225,7 @@ func (_c *MockTrackerRepository_FindAll_Call) Return(_a0 []domain.Tracker, _a1 e
 	return _c
 }
 
-func (_c *MockTrackerRepository_FindAll_Call) RunAndReturn(run func() ([]domain.Tracker, error)) *MockTrackerRepository_FindAll_Call {
+func (_c *MockTrackerRepository_FindAll_Call) RunAndReturn(run func(*domain.TrackerSortOptions) ([]domain.Tracker, error)) *MockTrackerRepository_FindAll_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -67,9 +67,15 @@ type UpdateTrackerInput struct {
 	Active      *bool   `json:"active,omitempty"`
 }
 
+// TrackerSortOptions specifies how the tracker list should be ordered.
+type TrackerSortOptions struct {
+	SortBy    string // one of: ratio, uploaded, downloaded
+	SortOrder string // asc or desc
+}
+
 // TrackerRepository is the persistence abstraction for Tracker entities.
 type TrackerRepository interface {
-	FindAll() ([]Tracker, error)
+	FindAll(opts *TrackerSortOptions) ([]Tracker, error)
 	FindByID(id uint) (*Tracker, error)
 	FindActive() ([]Tracker, error)
 	Create(tracker *Tracker) error
@@ -82,7 +88,7 @@ type TrackerRepository interface {
 
 // TrackerService is the business-logic abstraction for Tracker operations.
 type TrackerService interface {
-	GetAll() ([]Tracker, error)
+	GetAll(opts *TrackerSortOptions) ([]Tracker, error)
 	GetByID(id uint) (*Tracker, error)
 	GetActive() ([]Tracker, error)
 	Create(input CreateTrackerInput) (*Tracker, error)
