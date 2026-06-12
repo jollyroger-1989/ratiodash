@@ -126,6 +126,63 @@ func (_c *MockStatsService_GetDashboard_Call) RunAndReturn(run func() ([]domain.
 	return _c
 }
 
+// GetGlobalHistory provides a mock function with no fields
+func (_m *MockStatsService) GetGlobalHistory() ([]domain.GlobalStatsPoint, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGlobalHistory")
+	}
+
+	var r0 []domain.GlobalStatsPoint
+	var r1 error
+	if rf, ok := ret.Get(0).(func() ([]domain.GlobalStatsPoint, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() []domain.GlobalStatsPoint); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.GlobalStatsPoint)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockStatsService_GetGlobalHistory_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGlobalHistory'
+type MockStatsService_GetGlobalHistory_Call struct {
+	*mock.Call
+}
+
+// GetGlobalHistory is a helper method to define mock.On call
+func (_e *MockStatsService_Expecter) GetGlobalHistory() *MockStatsService_GetGlobalHistory_Call {
+	return &MockStatsService_GetGlobalHistory_Call{Call: _e.mock.On("GetGlobalHistory")}
+}
+
+func (_c *MockStatsService_GetGlobalHistory_Call) Run(run func()) *MockStatsService_GetGlobalHistory_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockStatsService_GetGlobalHistory_Call) Return(_a0 []domain.GlobalStatsPoint, _a1 error) *MockStatsService_GetGlobalHistory_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockStatsService_GetGlobalHistory_Call) RunAndReturn(run func() ([]domain.GlobalStatsPoint, error)) *MockStatsService_GetGlobalHistory_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetHistory provides a mock function with given fields: trackerID, limit
 func (_m *MockStatsService) GetHistory(trackerID uint, limit int) ([]domain.TrackerStats, error) {
 	ret := _m.Called(trackerID, limit)
@@ -185,29 +242,29 @@ func (_c *MockStatsService_GetHistory_Call) RunAndReturn(run func(uint, int) ([]
 	return _c
 }
 
-// GetGlobalHistory provides a mock function with no fields
-func (_m *MockStatsService) GetGlobalHistory() ([]domain.GlobalStatsPoint, error) {
-	ret := _m.Called()
+// GetHistorySince provides a mock function with given fields: trackerID, since
+func (_m *MockStatsService) GetHistorySince(trackerID uint, since time.Time) ([]domain.TrackerStats, error) {
+	ret := _m.Called(trackerID, since)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetGlobalHistory")
+		panic("no return value specified for GetHistorySince")
 	}
 
-	var r0 []domain.GlobalStatsPoint
+	var r0 []domain.TrackerStats
 	var r1 error
-	if rf, ok := ret.Get(0).(func() ([]domain.GlobalStatsPoint, error)); ok {
-		return rf()
+	if rf, ok := ret.Get(0).(func(uint, time.Time) ([]domain.TrackerStats, error)); ok {
+		return rf(trackerID, since)
 	}
-	if rf, ok := ret.Get(0).(func() []domain.GlobalStatsPoint); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(uint, time.Time) []domain.TrackerStats); ok {
+		r0 = rf(trackerID, since)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domain.GlobalStatsPoint)
+			r0 = ret.Get(0).([]domain.TrackerStats)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(uint, time.Time) error); ok {
+		r1 = rf(trackerID, since)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -215,29 +272,31 @@ func (_m *MockStatsService) GetGlobalHistory() ([]domain.GlobalStatsPoint, error
 	return r0, r1
 }
 
-// MockStatsService_GetGlobalHistory_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGlobalHistory'
-type MockStatsService_GetGlobalHistory_Call struct {
+// MockStatsService_GetHistorySince_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetHistorySince'
+type MockStatsService_GetHistorySince_Call struct {
 	*mock.Call
 }
 
-// GetGlobalHistory is a helper method to define mock.On call
-func (_e *MockStatsService_Expecter) GetGlobalHistory() *MockStatsService_GetGlobalHistory_Call {
-	return &MockStatsService_GetGlobalHistory_Call{Call: _e.mock.On("GetGlobalHistory")}
+// GetHistorySince is a helper method to define mock.On call
+//   - trackerID uint
+//   - since time.Time
+func (_e *MockStatsService_Expecter) GetHistorySince(trackerID interface{}, since interface{}) *MockStatsService_GetHistorySince_Call {
+	return &MockStatsService_GetHistorySince_Call{Call: _e.mock.On("GetHistorySince", trackerID, since)}
 }
 
-func (_c *MockStatsService_GetGlobalHistory_Call) Run(run func()) *MockStatsService_GetGlobalHistory_Call {
+func (_c *MockStatsService_GetHistorySince_Call) Run(run func(trackerID uint, since time.Time)) *MockStatsService_GetHistorySince_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		run(args[0].(uint), args[1].(time.Time))
 	})
 	return _c
 }
 
-func (_c *MockStatsService_GetGlobalHistory_Call) Return(_a0 []domain.GlobalStatsPoint, _a1 error) *MockStatsService_GetGlobalHistory_Call {
+func (_c *MockStatsService_GetHistorySince_Call) Return(_a0 []domain.TrackerStats, _a1 error) *MockStatsService_GetHistorySince_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockStatsService_GetGlobalHistory_Call) RunAndReturn(run func() ([]domain.GlobalStatsPoint, error)) *MockStatsService_GetGlobalHistory_Call {
+func (_c *MockStatsService_GetHistorySince_Call) RunAndReturn(run func(uint, time.Time) ([]domain.TrackerStats, error)) *MockStatsService_GetHistorySince_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -296,65 +355,6 @@ func (_c *MockStatsService_GetLatest_Call) Return(_a0 *domain.TrackerStats, _a1 
 }
 
 func (_c *MockStatsService_GetLatest_Call) RunAndReturn(run func(uint) (*domain.TrackerStats, error)) *MockStatsService_GetLatest_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetHistorySince provides a mock function with given fields: trackerID, since
-func (_m *MockStatsService) GetHistorySince(trackerID uint, since time.Time) ([]domain.TrackerStats, error) {
-	ret := _m.Called(trackerID, since)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetHistorySince")
-	}
-
-	var r0 []domain.TrackerStats
-	var r1 error
-	if rf, ok := ret.Get(0).(func(uint, time.Time) ([]domain.TrackerStats, error)); ok {
-		return rf(trackerID, since)
-	}
-	if rf, ok := ret.Get(0).(func(uint, time.Time) []domain.TrackerStats); ok {
-		r0 = rf(trackerID, since)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domain.TrackerStats)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(uint, time.Time) error); ok {
-		r1 = rf(trackerID, since)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockStatsService_GetHistorySince_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetHistorySince'
-type MockStatsService_GetHistorySince_Call struct {
-	*mock.Call
-}
-
-// GetHistorySince is a helper method to define mock.On call
-//   - trackerID uint
-//   - since time.Time
-func (_e *MockStatsService_Expecter) GetHistorySince(trackerID interface{}, since interface{}) *MockStatsService_GetHistorySince_Call {
-	return &MockStatsService_GetHistorySince_Call{Call: _e.mock.On("GetHistorySince", trackerID, since)}
-}
-
-func (_c *MockStatsService_GetHistorySince_Call) Run(run func(trackerID uint, since time.Time)) *MockStatsService_GetHistorySince_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(uint), args[1].(time.Time))
-	})
-	return _c
-}
-
-func (_c *MockStatsService_GetHistorySince_Call) Return(_a0 []domain.TrackerStats, _a1 error) *MockStatsService_GetHistorySince_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockStatsService_GetHistorySince_Call) RunAndReturn(run func(uint, time.Time) ([]domain.TrackerStats, error)) *MockStatsService_GetHistorySince_Call {
 	_c.Call.Return(run)
 	return _c
 }

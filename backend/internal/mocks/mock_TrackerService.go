@@ -217,17 +217,14 @@ type MockTrackerService_GetAll_Call struct {
 }
 
 // GetAll is a helper method to define mock.On call
+//   - opts *domain.TrackerSortOptions
 func (_e *MockTrackerService_Expecter) GetAll(opts interface{}) *MockTrackerService_GetAll_Call {
 	return &MockTrackerService_GetAll_Call{Call: _e.mock.On("GetAll", opts)}
 }
 
 func (_c *MockTrackerService_GetAll_Call) Run(run func(opts *domain.TrackerSortOptions)) *MockTrackerService_GetAll_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var opts *domain.TrackerSortOptions
-		if v := args.Get(0); v != nil {
-			opts = v.(*domain.TrackerSortOptions)
-		}
-		run(opts)
+		run(args[0].(*domain.TrackerSortOptions))
 	})
 	return _c
 }

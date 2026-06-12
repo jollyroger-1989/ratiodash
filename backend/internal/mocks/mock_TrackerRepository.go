@@ -205,17 +205,14 @@ type MockTrackerRepository_FindAll_Call struct {
 }
 
 // FindAll is a helper method to define mock.On call
+//   - opts *domain.TrackerSortOptions
 func (_e *MockTrackerRepository_Expecter) FindAll(opts interface{}) *MockTrackerRepository_FindAll_Call {
 	return &MockTrackerRepository_FindAll_Call{Call: _e.mock.On("FindAll", opts)}
 }
 
 func (_c *MockTrackerRepository_FindAll_Call) Run(run func(opts *domain.TrackerSortOptions)) *MockTrackerRepository_FindAll_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var opts *domain.TrackerSortOptions
-		if v := args.Get(0); v != nil {
-			opts = v.(*domain.TrackerSortOptions)
-		}
-		run(opts)
+		run(args[0].(*domain.TrackerSortOptions))
 	})
 	return _c
 }
