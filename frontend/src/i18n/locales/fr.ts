@@ -17,6 +17,7 @@ export default {
       globalRatio: 'Ratio global',
       noData: '—',
     },
+    chartTitle: 'Évolution sur les 30 derniers jours',
   },
   common: {
     loading: 'Chargement…',

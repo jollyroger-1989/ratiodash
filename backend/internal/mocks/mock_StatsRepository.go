@@ -174,9 +174,9 @@ func (_c *MockStatsRepository_FindByTrackerID_Call) RunAndReturn(run func(uint, 
 	return _c
 }
 
-// FindGlobalHistory provides a mock function with given fields: limit
-func (_m *MockStatsRepository) FindGlobalHistory(limit int) ([]domain.GlobalStatsPoint, error) {
-	ret := _m.Called(limit)
+// FindGlobalHistory provides a mock function with given fields: since
+func (_m *MockStatsRepository) FindGlobalHistory(since time.Time) ([]domain.GlobalStatsPoint, error) {
+	ret := _m.Called(since)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindGlobalHistory")
@@ -184,19 +184,19 @@ func (_m *MockStatsRepository) FindGlobalHistory(limit int) ([]domain.GlobalStat
 
 	var r0 []domain.GlobalStatsPoint
 	var r1 error
-	if rf, ok := ret.Get(0).(func(int) ([]domain.GlobalStatsPoint, error)); ok {
-		return rf(limit)
+	if rf, ok := ret.Get(0).(func(time.Time) ([]domain.GlobalStatsPoint, error)); ok {
+		return rf(since)
 	}
-	if rf, ok := ret.Get(0).(func(int) []domain.GlobalStatsPoint); ok {
-		r0 = rf(limit)
+	if rf, ok := ret.Get(0).(func(time.Time) []domain.GlobalStatsPoint); ok {
+		r0 = rf(since)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.GlobalStatsPoint)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(int) error); ok {
-		r1 = rf(limit)
+	if rf, ok := ret.Get(1).(func(time.Time) error); ok {
+		r1 = rf(since)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -210,14 +210,14 @@ type MockStatsRepository_FindGlobalHistory_Call struct {
 }
 
 // FindGlobalHistory is a helper method to define mock.On call
-//   - limit int
-func (_e *MockStatsRepository_Expecter) FindGlobalHistory(limit interface{}) *MockStatsRepository_FindGlobalHistory_Call {
-	return &MockStatsRepository_FindGlobalHistory_Call{Call: _e.mock.On("FindGlobalHistory", limit)}
+//   - since time.Time
+func (_e *MockStatsRepository_Expecter) FindGlobalHistory(since interface{}) *MockStatsRepository_FindGlobalHistory_Call {
+	return &MockStatsRepository_FindGlobalHistory_Call{Call: _e.mock.On("FindGlobalHistory", since)}
 }
 
-func (_c *MockStatsRepository_FindGlobalHistory_Call) Run(run func(limit int)) *MockStatsRepository_FindGlobalHistory_Call {
+func (_c *MockStatsRepository_FindGlobalHistory_Call) Run(run func(since time.Time)) *MockStatsRepository_FindGlobalHistory_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(int))
+		run(args[0].(time.Time))
 	})
 	return _c
 }
@@ -227,7 +227,7 @@ func (_c *MockStatsRepository_FindGlobalHistory_Call) Return(_a0 []domain.Global
 	return _c
 }
 
-func (_c *MockStatsRepository_FindGlobalHistory_Call) RunAndReturn(run func(int) ([]domain.GlobalStatsPoint, error)) *MockStatsRepository_FindGlobalHistory_Call {
+func (_c *MockStatsRepository_FindGlobalHistory_Call) RunAndReturn(run func(time.Time) ([]domain.GlobalStatsPoint, error)) *MockStatsRepository_FindGlobalHistory_Call {
 	_c.Call.Return(run)
 	return _c
 }

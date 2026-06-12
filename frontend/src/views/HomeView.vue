@@ -29,15 +29,7 @@
 
     <div class="chart-card">
       <div class="chart-toolbar">
-        <h2>{{ $t('detail.evolution') }}</h2>
-        <div class="period-tabs">
-          <button
-            v-for="p in periods"
-            :key="p.label"
-            :class="['period-btn', { active: activePeriod === p.label }]"
-            @click="activePeriod = p.label"
-          >{{ p.title }}</button>
-        </div>
+        <h2>{{ $t('home.chartTitle') }}</h2>
       </div>
 
       <p v-if="chartLoading" class="muted">{{ $t('common.loading') }}</p>
@@ -78,13 +70,7 @@ const chartLoading = ref(false)
 const chartError = ref('')
 const history = ref<GlobalStatsPoint[]>([])
 
-const periods = computed(() => [
-  { label: '7d', days: 7, title: '7d' },
-  { label: '30d', days: 30, title: '30d' },
-  { label: '90d', days: 90, title: '90d' },
-  { label: 'All', days: 0, title: t('detail.periods.all') },
-])
-const activePeriod = ref('30d')
+
 
 onMounted(async () => {
   if (!store.dashboard.length) {
@@ -117,9 +103,7 @@ const ratioClass = computed(() => {
 })
 
 const filteredHistory = computed(() => {
-  const period = periods.value.find((p) => p.label === activePeriod.value)
-  if (!period || !period.days) return history.value
-  const cutoff = Date.now() - period.days * 86_400_000
+  const cutoff = Date.now() - 30 * 86_400_000
   return history.value.filter((entry) => new Date(entry.fetched_at).getTime() >= cutoff)
 })
 
@@ -197,7 +181,7 @@ async function loadGlobalHistory() {
   chartLoading.value = true
   chartError.value = ''
   try {
-    history.value = await statsApi.getGlobalHistory(180)
+    history.value = await statsApi.getGlobalHistory()
   } catch {
     chartError.value = t('history.errorLoad')
   } finally {

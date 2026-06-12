@@ -162,9 +162,8 @@ export const statsApi = {
     return http.get<TrackerStats>(`/trackers/${trackerId}/stats/latest`).then((r) => r.data)
   },
 
-  getGlobalHistory(limit?: number): Promise<GlobalStatsPoint[]> {
-    const params = typeof limit === 'number' ? { limit } : undefined
-    return http.get<GlobalStatsPoint[]>('/stats/global', { params }).then((r) => r.data)
+  getGlobalHistory(): Promise<GlobalStatsPoint[]> {
+    return http.get<GlobalStatsPoint[]>('/stats/global').then((r) => r.data)
   },
 
   deleteEntry(trackerId: number, statId: number): Promise<void> {

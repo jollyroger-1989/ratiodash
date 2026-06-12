@@ -184,7 +184,7 @@ func TestStatsRepository_FindGlobalHistory(t *testing.T) {
 	t.Run("returns empty slice when no stats exist", func(t *testing.T) {
 		repo := repository.NewStatsRepository(testutil.NewDB(t))
 
-		points, err := repo.FindGlobalHistory(0)
+		points, err := repo.FindGlobalHistory(time.Time{})
 
 		require.NoError(t, err)
 		assert.Equal(t, []domain.GlobalStatsPoint{}, points)
@@ -204,7 +204,7 @@ func TestStatsRepository_FindGlobalHistory(t *testing.T) {
 		require.NoError(t, repo.Create(&domain.TrackerStats{TrackerID: tr2.ID, Uploaded: 200, Downloaded: 100, Ratio: 2, FetchedAt: day1.Add(10 * time.Hour)}))
 		require.NoError(t, repo.Create(&domain.TrackerStats{TrackerID: tr1.ID, Uploaded: 300, Downloaded: 100, Ratio: 3, FetchedAt: day2.Add(9 * time.Hour)}))
 
-		points, err := repo.FindGlobalHistory(0)
+		points, err := repo.FindGlobalHistory(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
 
 		require.NoError(t, err)
 		require.Len(t, points, 2)
@@ -218,7 +218,7 @@ func TestStatsRepository_FindGlobalHistory(t *testing.T) {
 		assert.Equal(t, 2.0, points[1].Ratio)
 	})
 
-	t.Run("respects limit", func(t *testing.T) {
+	t.Run("respects since filter", func(t *testing.T) {
 		db := testutil.NewDB(t)
 		repo := repository.NewStatsRepository(db)
 		tr := seedTracker(t, db, "Alpha")
@@ -228,7 +228,7 @@ func TestStatsRepository_FindGlobalHistory(t *testing.T) {
 			require.NoError(t, repo.Create(&domain.TrackerStats{TrackerID: tr.ID, Uploaded: int64((i + 1) * 100), Downloaded: int64((i + 1) * 50), Ratio: 2, FetchedAt: day.Add(12 * time.Hour)}))
 		}
 
-		points, err := repo.FindGlobalHistory(2)
+		points, err := repo.FindGlobalHistory(time.Date(2026, 5, 28, 0, 0, 0, 0, time.UTC))
 
 		require.NoError(t, err)
 		require.Len(t, points, 2)

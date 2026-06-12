@@ -185,9 +185,9 @@ func (_c *MockStatsService_GetHistory_Call) RunAndReturn(run func(uint, int) ([]
 	return _c
 }
 
-// GetGlobalHistory provides a mock function with given fields: limit
-func (_m *MockStatsService) GetGlobalHistory(limit int) ([]domain.GlobalStatsPoint, error) {
-	ret := _m.Called(limit)
+// GetGlobalHistory provides a mock function with no fields
+func (_m *MockStatsService) GetGlobalHistory() ([]domain.GlobalStatsPoint, error) {
+	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetGlobalHistory")
@@ -195,19 +195,19 @@ func (_m *MockStatsService) GetGlobalHistory(limit int) ([]domain.GlobalStatsPoi
 
 	var r0 []domain.GlobalStatsPoint
 	var r1 error
-	if rf, ok := ret.Get(0).(func(int) ([]domain.GlobalStatsPoint, error)); ok {
-		return rf(limit)
+	if rf, ok := ret.Get(0).(func() ([]domain.GlobalStatsPoint, error)); ok {
+		return rf()
 	}
-	if rf, ok := ret.Get(0).(func(int) []domain.GlobalStatsPoint); ok {
-		r0 = rf(limit)
+	if rf, ok := ret.Get(0).(func() []domain.GlobalStatsPoint); ok {
+		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.GlobalStatsPoint)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(int) error); ok {
-		r1 = rf(limit)
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -221,14 +221,13 @@ type MockStatsService_GetGlobalHistory_Call struct {
 }
 
 // GetGlobalHistory is a helper method to define mock.On call
-//   - limit int
-func (_e *MockStatsService_Expecter) GetGlobalHistory(limit interface{}) *MockStatsService_GetGlobalHistory_Call {
-	return &MockStatsService_GetGlobalHistory_Call{Call: _e.mock.On("GetGlobalHistory", limit)}
+func (_e *MockStatsService_Expecter) GetGlobalHistory() *MockStatsService_GetGlobalHistory_Call {
+	return &MockStatsService_GetGlobalHistory_Call{Call: _e.mock.On("GetGlobalHistory")}
 }
 
-func (_c *MockStatsService_GetGlobalHistory_Call) Run(run func(limit int)) *MockStatsService_GetGlobalHistory_Call {
+func (_c *MockStatsService_GetGlobalHistory_Call) Run(run func()) *MockStatsService_GetGlobalHistory_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(int))
+		run()
 	})
 	return _c
 }
@@ -238,7 +237,7 @@ func (_c *MockStatsService_GetGlobalHistory_Call) Return(_a0 []domain.GlobalStat
 	return _c
 }
 
-func (_c *MockStatsService_GetGlobalHistory_Call) RunAndReturn(run func(int) ([]domain.GlobalStatsPoint, error)) *MockStatsService_GetGlobalHistory_Call {
+func (_c *MockStatsService_GetGlobalHistory_Call) RunAndReturn(run func() ([]domain.GlobalStatsPoint, error)) *MockStatsService_GetGlobalHistory_Call {
 	_c.Call.Return(run)
 	return _c
 }

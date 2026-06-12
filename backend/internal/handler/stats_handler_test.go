@@ -163,12 +163,12 @@ func TestStatsHandler_GetGlobalHistory(t *testing.T) {
 		assert.Empty(t, body)
 	})
 
-	t.Run("returns aggregated daily snapshots", func(t *testing.T) {
+	t.Run("returns aggregated daily snapshots for the last 30 days", func(t *testing.T) {
 		env := setupStatsHandler(t)
 		tr1 := seedTracker(t, env.trackerRepo, "Alpha")
 		tr2 := seedTracker(t, env.trackerRepo, "Beta")
 
-		t0 := time.Date(2026, 5, 30, 0, 0, 0, 0, time.UTC)
+		t0 := time.Now().UTC().Truncate(24 * time.Hour).Add(-time.Hour * 24)
 		require.NoError(t, env.statsRepo.Create(&domain.TrackerStats{TrackerID: tr1.ID, Uploaded: 100, Downloaded: 50, Ratio: 2, FetchedAt: t0.Add(10 * time.Hour)}))
 		require.NoError(t, env.statsRepo.Create(&domain.TrackerStats{TrackerID: tr2.ID, Uploaded: 200, Downloaded: 100, Ratio: 2, FetchedAt: t0.Add(11 * time.Hour)}))
 
@@ -183,23 +183,22 @@ func TestStatsHandler_GetGlobalHistory(t *testing.T) {
 		assert.Equal(t, 2.0, body[0].Ratio)
 	})
 
-	t.Run("respects limit query parameter", func(t *testing.T) {
+	t.Run("excludes data older than 30 days", func(t *testing.T) {
 		env := setupStatsHandler(t)
 		tr := seedTracker(t, env.trackerRepo, "Alpha")
 
-		for i := 0; i < 3; i++ {
-			day := time.Date(2026, 5, 27+i, 0, 0, 0, 0, time.UTC)
-			require.NoError(t, env.statsRepo.Create(&domain.TrackerStats{
-				TrackerID: tr.ID, Uploaded: int64((i + 1) * 100), Downloaded: int64((i + 1) * 50), Ratio: 2, FetchedAt: day.Add(9 * time.Hour),
-			}))
-		}
+		old := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -31)
+		recent := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -1)
+		require.NoError(t, env.statsRepo.Create(&domain.TrackerStats{TrackerID: tr.ID, Uploaded: 100, Downloaded: 50, Ratio: 2, FetchedAt: old.Add(10 * time.Hour)}))
+		require.NoError(t, env.statsRepo.Create(&domain.TrackerStats{TrackerID: tr.ID, Uploaded: 200, Downloaded: 100, Ratio: 2, FetchedAt: recent.Add(10 * time.Hour)}))
 
-		resp := env.api.Do(http.MethodGet, "/api/v1/stats/global?limit=2")
+		resp := env.api.Do(http.MethodGet, "/api/v1/stats/global")
 
 		require.Equal(t, http.StatusOK, resp.Code)
 		var body []domain.GlobalStatsPoint
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
-		assert.Len(t, body, 2)
+		require.Len(t, body, 1)
+		assert.Equal(t, int64(200), body[0].Uploaded)
 	})
 }
 

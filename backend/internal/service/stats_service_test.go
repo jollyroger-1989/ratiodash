@@ -79,11 +79,11 @@ func TestStatsService_GetGlobalHistory(t *testing.T) {
 	t.Run("returns aggregated points", func(t *testing.T) {
 		statsRepo := mocks.NewMockStatsRepository(t)
 		trackerRepo := mocks.NewMockTrackerRepository(t)
-		statsRepo.EXPECT().FindGlobalHistory(30).Return([]domain.GlobalStatsPoint{
+		statsRepo.EXPECT().FindGlobalHistory(mock.AnythingOfType("time.Time")).Return([]domain.GlobalStatsPoint{
 			{Uploaded: 100, Downloaded: 50, Ratio: 2},
 		}, nil)
 
-		points, err := service.NewStatsService(statsRepo, trackerRepo).GetGlobalHistory(30)
+		points, err := service.NewStatsService(statsRepo, trackerRepo).GetGlobalHistory()
 
 		require.NoError(t, err)
 		assert.Len(t, points, 1)
@@ -92,9 +92,9 @@ func TestStatsService_GetGlobalHistory(t *testing.T) {
 	t.Run("propagates repository error", func(t *testing.T) {
 		statsRepo := mocks.NewMockStatsRepository(t)
 		trackerRepo := mocks.NewMockTrackerRepository(t)
-		statsRepo.EXPECT().FindGlobalHistory(30).Return(nil, errors.New("db error"))
+		statsRepo.EXPECT().FindGlobalHistory(mock.AnythingOfType("time.Time")).Return(nil, errors.New("db error"))
 
-		_, err := service.NewStatsService(statsRepo, trackerRepo).GetGlobalHistory(30)
+		_, err := service.NewStatsService(statsRepo, trackerRepo).GetGlobalHistory()
 
 		assert.Error(t, err)
 	})

@@ -62,7 +62,7 @@ func (r *statsRepository) FindLatestAll() ([]domain.TrackerStats, error) {
 	return stats, nil
 }
 
-func (r *statsRepository) FindGlobalHistory(limit int) ([]domain.GlobalStatsPoint, error) {
+func (r *statsRepository) FindGlobalHistory(since time.Time) ([]domain.GlobalStatsPoint, error) {
 	type row struct {
 		Day        string `gorm:"column:day"`
 		Uploaded   int64  `gorm:"column:uploaded"`
@@ -89,8 +89,8 @@ func (r *statsRepository) FindGlobalHistory(limit int) ([]domain.GlobalStatsPoin
 )
 AS daily_totals`).Select("day, uploaded, downloaded").Order("day DESC")
 
-	if limit > 0 {
-		query = query.Limit(limit)
+	if !since.IsZero() {
+		query = query.Where("day >= ?", since.Format("2006-01-02"))
 	}
 
 	var rows []row

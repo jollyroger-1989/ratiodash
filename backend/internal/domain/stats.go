@@ -33,7 +33,7 @@ type StatsRepository interface {
 	// FindByTrackerIDSince returns all snapshots for trackerID with fetched_at >= since, ordered DESC.
 	FindByTrackerIDSince(trackerID uint, since time.Time) ([]TrackerStats, error)
 	FindLatestByTrackerID(trackerID uint) (*TrackerStats, error)
-	FindGlobalHistory(limit int) ([]GlobalStatsPoint, error)
+	FindGlobalHistory(since time.Time) ([]GlobalStatsPoint, error)
 	// FindLatestAll returns the most recent snapshot for every tracker.
 	FindLatestAll() ([]TrackerStats, error)
 	// FindNearestAtOrBefore returns the latest snapshot taken at or before t.
@@ -51,7 +51,7 @@ type StatsService interface {
 	// GetHistorySince returns all snapshots for trackerID with fetched_at >= since.
 	GetHistorySince(trackerID uint, since time.Time) ([]TrackerStats, error)
 	GetLatest(trackerID uint) (*TrackerStats, error)
-	GetGlobalHistory(limit int) ([]GlobalStatsPoint, error)
+	GetGlobalHistory() ([]GlobalStatsPoint, error)
 	// GetDashboard returns all trackers paired with their latest snapshot (nil if none yet).
 	GetDashboard() ([]DashboardEntry, error)
 	// DeleteEntry removes a single history snapshot.

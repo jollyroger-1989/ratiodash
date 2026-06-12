@@ -35,9 +35,6 @@ type GetTrackerHistoryOutput struct {
 	Body []domain.TrackerStats
 }
 
-type GetGlobalHistoryInput struct {
-	Limit int `query:"limit" doc:"Maximum number of daily snapshots to return"`
-}
 type GetGlobalHistoryOutput struct {
 	Body []domain.GlobalStatsPoint
 }
@@ -82,8 +79,8 @@ func (h *StatsHandler) GetTrackerHistory(ctx context.Context, input *GetTrackerH
 	return &GetTrackerHistoryOutput{Body: stats}, nil
 }
 
-func (h *StatsHandler) GetGlobalHistory(ctx context.Context, input *GetGlobalHistoryInput) (*GetGlobalHistoryOutput, error) {
-	stats, err := h.service.GetGlobalHistory(input.Limit)
+func (h *StatsHandler) GetGlobalHistory(ctx context.Context, _ *struct{}) (*GetGlobalHistoryOutput, error) {
+	stats, err := h.service.GetGlobalHistory()
 	if err != nil {
 		return nil, huma.Error500InternalServerError("failed to load global history")
 	}
