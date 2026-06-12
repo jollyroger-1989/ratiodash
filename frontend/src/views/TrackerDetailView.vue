@@ -94,7 +94,7 @@ async function loadHistory() {
   const p = periods.value.find((p) => p.label === activePeriod.value)!
   const params: Parameters<typeof statsApi.getHistory>[1] = p.days > 0
     ? { startDate: new Date(Date.now() - p.days * 86_400_000).toISOString().slice(0, 10) }
-    : { startDate: '2000-01-01' }
+    : { startDate: tracker.value?.created_at.slice(0, 10) ?? '2000-01-01' }
   history.value = await statsApi.getHistory(trackerId, params)
 }
 
@@ -201,11 +201,8 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
 // --- Load ---
 onMounted(async () => {
   try {
-    const [s] = await Promise.all([
-      trackersApi.getById(trackerId),
-      loadHistory(),
-    ])
-    tracker.value = s
+    tracker.value = await trackersApi.getById(trackerId)
+    await loadHistory()
   } catch {
     error.value = t('detail.errorLoad')
   } finally {
