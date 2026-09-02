@@ -6,16 +6,20 @@ import "gopkg.in/yaml.v3"
 // definition. Each .yml file in the scrapers directory corresponds to one
 // Definition and produces one YAMLScraper at runtime.
 type Definition struct {
-	ID          string    `yaml:"id"`
-	Name        string    `yaml:"name"`
-	Description string    `yaml:"description"`
-	Language    string    `yaml:"language"`
-	Type        string    `yaml:"type"`
-	Encoding    string    `yaml:"encoding"`
-	Links       []string  `yaml:"links"`
-	Settings    []Setting `yaml:"settings"`
-	Login       *LoginDef `yaml:"login"`
-	Stats       StatsDef  `yaml:"stats"`
+	ID          string   `yaml:"id"`
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description"`
+	Language    string   `yaml:"language"`
+	Type        string   `yaml:"type"`
+	Encoding    string   `yaml:"encoding"`
+	Links       []string `yaml:"links"`
+	// Deprecated marks a scraper as no longer selectable when creating a new
+	// tracker (e.g. the site shut down or changed its API). Existing trackers
+	// already using this scraper keep working.
+	Deprecated bool      `yaml:"deprecated"`
+	Settings   []Setting `yaml:"settings"`
+	Login      *LoginDef `yaml:"login"`
+	Stats      StatsDef  `yaml:"stats"`
 }
 
 // Setting describes a credential field that must be provided when registering a

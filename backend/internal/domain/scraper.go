@@ -20,6 +20,10 @@ type TrackerScraper interface {
 	// CredentialFields describes the credentials this scraper needs.
 	// The frontend renders a form field for each entry.
 	CredentialFields() []CredentialField
+	// Deprecated reports whether this scraper should be hidden from the
+	// tracker-creation UI. Trackers already using a deprecated scraper keep
+	// working; it just can't be selected for new ones.
+	Deprecated() bool
 	// Fetch retrieves the current upload / download / ratio for the given tracker.
 	// TrackerID and FetchedAt are set by the caller; the scraper only fills the
 	// measurement fields.

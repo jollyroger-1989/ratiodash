@@ -31,6 +31,9 @@ func (ys *YAMLScraper) logger() *logrus.Entry {
 // Key returns the scraper's unique identifier (the definition's id field).
 func (ys *YAMLScraper) Key() string { return ys.def.ID }
 
+// Deprecated reports whether the definition is marked deprecated.
+func (ys *YAMLScraper) Deprecated() bool { return ys.def.Deprecated }
+
 // CredentialFields returns the credential form fields declared in the definition.
 func (ys *YAMLScraper) CredentialFields() []domain.CredentialField {
 	fields := make([]domain.CredentialField, 0, len(ys.def.Settings))

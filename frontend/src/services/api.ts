@@ -41,6 +41,7 @@ export interface CredentialField {
 export interface ScraperDef {
   key: string
   credential_fields: CredentialField[]
+  deprecated: boolean
 }
 
 // ---- Tracker types ----

@@ -24,7 +24,7 @@
                 <option v-if="loadingScrapers" value="" disabled>
                   {{ $t('trackers.modal.loadingScrapers') }}
                 </option>
-                <option v-for="s in scrapers" :key="s.key" :value="s.key">{{ s.key }}</option>
+                <option v-for="s in selectableScrapers" :key="s.key" :value="s.key">{{ s.key }}</option>
               </select>
             </div>
             <div class="field">
@@ -109,6 +109,13 @@ const selectedScraper = computed(
   () => scrapers.value.find((s) => s.key === form.value.scraper_key) ?? null
 )
 
+// Deprecated scrapers are hidden from the picker for new trackers, but the
+// current scraper of a tracker being edited must stay visible/selectable
+// even if it has since been deprecated.
+const selectableScrapers = computed(() =>
+  scrapers.value.filter((s) => !s.deprecated || s.key === form.value.scraper_key)
+)
+
 watch(
   () => props.modelValue,
   async (open) => {
@@ -143,7 +150,7 @@ function initForm() {
       ])
     )
   } else {
-    const first = scrapers.value[0] ?? null
+    const first = scrapers.value.find((s) => !s.deprecated) ?? scrapers.value[0] ?? null
     form.value = { name: '', scraper_key: first?.key ?? '', cron_expr: '@hourly' }
     credentialValues.value = Object.fromEntries(
       (first?.credential_fields ?? []).map((f) => [f.key, ''])

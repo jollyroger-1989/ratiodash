@@ -69,6 +69,51 @@ func (_c *MockTrackerScraper_CredentialFields_Call) RunAndReturn(run func() []do
 	return _c
 }
 
+// Deprecated provides a mock function with no fields
+func (_m *MockTrackerScraper) Deprecated() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Deprecated")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// MockTrackerScraper_Deprecated_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Deprecated'
+type MockTrackerScraper_Deprecated_Call struct {
+	*mock.Call
+}
+
+// Deprecated is a helper method to define mock.On call
+func (_e *MockTrackerScraper_Expecter) Deprecated() *MockTrackerScraper_Deprecated_Call {
+	return &MockTrackerScraper_Deprecated_Call{Call: _e.mock.On("Deprecated")}
+}
+
+func (_c *MockTrackerScraper_Deprecated_Call) Run(run func()) *MockTrackerScraper_Deprecated_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockTrackerScraper_Deprecated_Call) Return(_a0 bool) *MockTrackerScraper_Deprecated_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockTrackerScraper_Deprecated_Call) RunAndReturn(run func() bool) *MockTrackerScraper_Deprecated_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Fetch provides a mock function with given fields: ctx, tracker
 func (_m *MockTrackerScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*domain.TrackerStats, error) {
 	ret := _m.Called(ctx, tracker)

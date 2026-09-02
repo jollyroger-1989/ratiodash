@@ -27,6 +27,8 @@ func (s *GenericScraper) Key() string { return "generic" }
 
 func (s *GenericScraper) CredentialFields() []domain.CredentialField { return nil }
 
+func (s *GenericScraper) Deprecated() bool { return false }
+
 // Fetch makes an authenticated GET request and extracts upload/download/ratio.
 // Replace the TODO section with real parsing logic for the target site.
 //

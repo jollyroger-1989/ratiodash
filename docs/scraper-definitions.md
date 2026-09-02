@@ -80,6 +80,7 @@ Required fields:
 - `type`: usually `private`
 - `encoding`: usually `UTF-8`
 - `links`: optional fallback base URLs
+- `deprecated`: `true` to hide this scraper from the "add tracker" dropdown (default `false`). Trackers already using it keep working; only new-tracker selection is blocked.
 
 How base URL is chosen:
 

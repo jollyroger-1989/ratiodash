@@ -23,6 +23,7 @@ func NewScraperHandler(r domain.ScraperRegistry) *ScraperHandler {
 type ScraperInfo struct {
 	Key              string                   `json:"key"`
 	CredentialFields []domain.CredentialField `json:"credential_fields"`
+	Deprecated       bool                     `json:"deprecated"`
 }
 
 type ListScrapersOutput struct {
@@ -42,6 +43,7 @@ func (h *ScraperHandler) ListScrapers(_ context.Context, _ *struct{}) (*ListScra
 		infos = append(infos, ScraperInfo{
 			Key:              k,
 			CredentialFields: s.CredentialFields(),
+			Deprecated:       s.Deprecated(),
 		})
 	}
 	return &ListScrapersOutput{Body: infos}, nil

@@ -50,10 +50,12 @@ func TestScraperHandler_List(t *testing.T) {
 		genericScraper.EXPECT().CredentialFields().Return([]domain.CredentialField{
 			{Key: "api_key", Label: "API Key", Type: "password", Required: true},
 		})
+		genericScraper.EXPECT().Deprecated().Return(false)
 		unit3dScraper := mocks.NewMockTrackerScraper(t)
 		unit3dScraper.EXPECT().CredentialFields().Return([]domain.CredentialField{
 			{Key: "token", Label: "Token", Type: "password", Required: true},
 		})
+		unit3dScraper.EXPECT().Deprecated().Return(true)
 
 		env.registry.EXPECT().Get("generic").Return(genericScraper, true)
 		env.registry.EXPECT().Get("unit3d").Return(unit3dScraper, true)
@@ -68,6 +70,8 @@ func TestScraperHandler_List(t *testing.T) {
 		assert.Equal(t, "generic", body[0].Key)
 		assert.Equal(t, "unit3d", body[1].Key)
 		assert.Len(t, body[0].CredentialFields, 1)
+		assert.False(t, body[0].Deprecated)
+		assert.True(t, body[1].Deprecated)
 	})
 
 	t.Run("skips keys not found in registry", func(t *testing.T) {
@@ -77,6 +81,7 @@ func TestScraperHandler_List(t *testing.T) {
 
 		presentScraper := mocks.NewMockTrackerScraper(t)
 		presentScraper.EXPECT().CredentialFields().Return([]domain.CredentialField{})
+		presentScraper.EXPECT().Deprecated().Return(false)
 		env.registry.EXPECT().Get("present").Return(presentScraper, true)
 
 		resp := env.api.Do(http.MethodGet, "/api/v1/scrapers")

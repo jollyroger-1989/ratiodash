@@ -476,6 +476,28 @@ stats:
 	assert.Contains(t, err.Error(), `required credential "token" is missing`)
 }
 
+// TestYAMLScraper_Deprecated verifies the deprecated flag is parsed and exposed.
+func TestYAMLScraper_Deprecated(t *testing.T) {
+	defYAML := `
+id: olddefunct
+deprecated: true
+settings: []
+stats:
+  path: /api
+  response:
+    type: json
+  fields:
+    uploaded: {selector: up}
+    downloaded: {selector: down}
+    ratio: {selector: ratio}
+`
+	s := scraper.LoadFromYAMLForTest(t, defYAML)
+	assert.True(t, s.Deprecated())
+
+	s2 := scraper.LoadSingleForTest(t, "../../scrapers/unit3d.yml")
+	assert.False(t, s2.Deprecated())
+}
+
 // TestYAMLScraper_SSRFProtection verifies that non-http/https URL schemes are rejected.
 func TestYAMLScraper_SSRFProtection(t *testing.T) {
 	defYAML := `
