@@ -1,0 +1,49 @@
+id: v3x
+name: V3X
+description: >-
+  V3X private tracker. Authentication is a JSON API login (POST /auth/login)
+  that sets an HttpOnly session cookie; no token capture is needed since the
+  scraper's cookie jar carries the session automatically. Stats are read
+  directly from the JSON /auth/me endpoint.
+language: en-US
+type: private
+encoding: UTF-8
+links:
+  - https://v3x.club/
+
+settings:
+  - name: username
+    type: text
+    label: Username / Email
+    required: true
+  - name: password
+    type: password
+    label: Password
+    required: true
+
+login:
+  # The site and API live on different hosts (v3x.club vs api.v3x.club), so the
+  # login and stats paths below are absolute URLs rather than paths relative to
+  # the "links" entry.
+  method: json
+  path: https://api.v3x.club/auth/login
+  inputs:
+    login: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+    remember: true
+  response:
+    type: json
+
+stats:
+  path: https://api.v3x.club/auth/me
+  response:
+    type: json
+  fields:
+    uploaded:
+      selector: uploaded
+    downloaded:
+      selector: downloaded
+    ratio:
+      selector: ratio
+      filters:
+        - name: parsefloat
