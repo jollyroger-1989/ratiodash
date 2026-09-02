@@ -1,0 +1,38 @@
+id: draupnirr
+name: Draupnirr
+description: >-
+  Draupnirr private tracker (French). Authentication is token-based via an
+  X-Api-Key header; no login flow is required. Bonus upload bytes are added
+  to the upload total, and the ratio is computed since the API reports it
+  as null for members with zero download.
+language: fr-FR
+type: private
+encoding: UTF-8
+links:
+  - https://draupnirr.xyz/
+
+settings:
+  - name: token
+    type: password
+    label: API Key
+    required: true
+
+stats:
+  path: /api/me
+  headers:
+    X-Api-Key: "{{ .Config.token }}"
+  response:
+    type: json
+  fields:
+    _uploaded:
+      selector: uploaded
+    _bonus_uploaded:
+      selector: bonus_upload
+      optional: true
+      default: "0"
+    uploaded:
+      text: "{{ isum .Result._uploaded .Result._bonus_uploaded }}"
+    downloaded:
+      selector: downloaded
+    ratio:
+      text: "{{ fratio .Result.uploaded .Result.downloaded }}"
