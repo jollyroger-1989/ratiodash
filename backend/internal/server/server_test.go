@@ -42,13 +42,29 @@ func (f fakeAuthService) UpdateLanguage(string) error {
 	return nil
 }
 
+type fakeAPIKeyAuthenticator struct {
+	authenticateFn func(string) (bool, error)
+}
+
+func (f fakeAPIKeyAuthenticator) AuthenticateAPIKey(token string) (bool, error) {
+	if f.authenticateFn == nil {
+		return false, nil
+	}
+	return f.authenticateFn(token)
+}
+
+var _ domain.APIKeyAuthenticator = fakeAPIKeyAuthenticator{}
+
 func TestJWTMiddleware(t *testing.T) {
-	mw := jwtMiddleware(
+	mw := authMiddleware(
 		fakeAuthService{validateFn: func(token string) (string, error) {
 			if token == "jwt-ok" {
 				return "admin", nil
 			}
 			return "", errors.New("invalid")
+		}},
+		fakeAPIKeyAuthenticator{authenticateFn: func(token string) (bool, error) {
+			return token == "api-key-ok", nil
 		}},
 	)
 
@@ -101,6 +117,29 @@ func TestJWTMiddleware(t *testing.T) {
 		require.Equal(t, http.StatusUnauthorized, rr.Code)
 		assert.False(t, nextCalled)
 	})
+
+	t.Run("accepts valid api key", func(t *testing.T) {
+		nextCalled = false
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/trackers", nil)
+		req.Header.Set("Authorization", "Bearer api-key-ok")
+		rr := httptest.NewRecorder()
+
+		h.ServeHTTP(rr, req)
+
+		assert.True(t, nextCalled)
+	})
+
+	t.Run("rejects invalid api key", func(t *testing.T) {
+		nextCalled = false
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/trackers", nil)
+		req.Header.Set("Authorization", "Bearer not-a-valid-key")
+		rr := httptest.NewRecorder()
+
+		h.ServeHTTP(rr, req)
+
+		require.Equal(t, http.StatusUnauthorized, rr.Code)
+		assert.False(t, nextCalled)
+	})
 }
 
 var _ domain.AuthService = fakeAuthService{}
@@ -110,7 +149,7 @@ func TestDocsRoute_ServesSwaggerUI(t *testing.T) {
 		ServerAddr:     ":8080",
 		AllowedOrigins: []string{"http://localhost:5173"},
 	}
-	router, _ := NewRouter(cfg, fakeAuthService{})
+	router, _ := NewRouter(cfg, fakeAuthService{}, fakeAPIKeyAuthenticator{})
 
 	req := httptest.NewRequest(http.MethodGet, "/docs", nil)
 	rr := httptest.NewRecorder()

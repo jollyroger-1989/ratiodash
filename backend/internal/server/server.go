@@ -63,8 +63,10 @@ func authRateLimitMiddleware() func(http.Handler) http.Handler {
 	}
 }
 
-// jwtMiddleware protects all /api/v1/* routes except /api/v1/auth/*.
-func jwtMiddleware(auth domain.AuthService) func(http.Handler) http.Handler {
+// authMiddleware protects all /api/v1/* routes except /api/v1/auth/*.
+// It accepts either a JWT from POST /api/v1/auth/login or an API key
+// created via POST /api/v1/api-clients, both sent as a Bearer token.
+func authMiddleware(auth domain.AuthService, apiKeys domain.APIKeyAuthenticator) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Only protect API routes.
@@ -86,13 +88,20 @@ func jwtMiddleware(auth domain.AuthService) func(http.Handler) http.Handler {
 				return
 			}
 			token := strings.TrimPrefix(authHeader, "Bearer ")
-			if _, err := auth.ValidateToken(token); err != nil {
-				w.Header().Set("Content-Type", "application/problem+json")
-				w.WriteHeader(http.StatusUnauthorized)
-				fmt.Fprint(w, `{"title":"Unauthorized","status":401,"detail":"invalid or expired token"}`)
+
+			if _, err := auth.ValidateToken(token); err == nil {
+				next.ServeHTTP(w, r)
 				return
 			}
-			next.ServeHTTP(w, r)
+
+			if ok, err := apiKeys.AuthenticateAPIKey(token); err == nil && ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/problem+json")
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprint(w, `{"title":"Unauthorized","status":401,"detail":"invalid or expired token"}`)
 		})
 	}
 }
@@ -100,7 +109,7 @@ func jwtMiddleware(auth domain.AuthService) func(http.Handler) http.Handler {
 // NewRouter creates the chi router with middleware and initialises the Huma API
 // instance (which auto-generates the OpenAPI spec at /openapi.json and serves
 // Swagger UI at /docs).
-func NewRouter(cfg *config.Config, auth domain.AuthService) (*chi.Mux, huma.API) {
+func NewRouter(cfg *config.Config, auth domain.AuthService, apiKeys domain.APIKeyAuthenticator) (*chi.Mux, huma.API) {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
@@ -113,7 +122,7 @@ func NewRouter(cfg *config.Config, auth domain.AuthService) (*chi.Mux, huma.API)
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
 	router.Use(authRateLimitMiddleware())
-	router.Use(jwtMiddleware(auth))
+	router.Use(authMiddleware(auth, apiKeys))
 
 	// Health check (outside Huma so it doesn't appear in the OpenAPI spec)
 	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +142,7 @@ func NewRouter(cfg *config.Config, auth domain.AuthService) (*chi.Mux, huma.API)
 		Type:         "http",
 		Scheme:       "bearer",
 		BearerFormat: "JWT",
-		Description:  "JWT token returned by POST /api/v1/auth/login",
+		Description:  "JWT token returned by POST /api/v1/auth/login, or an API key created via POST /api/v1/api-clients",
 	}
 	// All API operations require JWT by default; public auth routes override this.
 	openAPIConfig.Security = []map[string][]string{{"bearerAuth": {}}}
