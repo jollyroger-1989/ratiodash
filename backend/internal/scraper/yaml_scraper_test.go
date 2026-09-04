@@ -3,12 +3,16 @@ package scraper_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/jose/ratiodash/internal/domain"
+	"github.com/jose/ratiodash/internal/mocks"
 	"github.com/jose/ratiodash/internal/scraper"
 )
 
@@ -519,4 +523,141 @@ stats:
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not allowed")
+}
+
+// ---------------------------------------------------------------------------
+// Session reuse
+// ---------------------------------------------------------------------------
+
+func tokenLoginYAML(serverURL string) string {
+	return `
+id: sessiontest
+settings:
+  - {name: username, type: text, label: Username, required: true}
+  - {name: password, type: password, label: Password, required: true}
+links:
+  - ` + serverURL + `
+login:
+  method: json
+  path: /login
+  inputs:
+    username: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+  response:
+    type: json
+  captures:
+    token:
+      selector: token
+stats:
+  path: /stats
+  headers:
+    Authorization: "Bearer {{ .Captures.token }}"
+  response:
+    type: json
+  fields:
+    uploaded: {selector: uploaded}
+    downloaded: {selector: downloaded}
+    ratio: {selector: ratio}
+`
+}
+
+// TestYAMLScraper_SessionReuse verifies that a second Fetch reuses the token
+// captured and persisted by the first Fetch, skipping the login endpoint.
+func TestYAMLScraper_SessionReuse(t *testing.T) {
+	var loginCalls, statsCalls atomic.Int32
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/login":
+			loginCalls.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"token":"tok-1"}`))
+		case "/stats":
+			statsCalls.Add(1)
+			assert.Equal(t, "Bearer tok-1", r.Header.Get("Authorization"))
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"uploaded":100,"downloaded":50,"ratio":2.0}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	sessions := mocks.NewMockTrackerRepository(t)
+	var savedSession string
+	sessions.EXPECT().
+		UpdateSession(uint(1), mock.Anything).
+		Run(func(_ uint, data string) { savedSession = data }).
+		Return(nil).
+		Once()
+
+	s := scraper.LoadFromYAMLWithSessionsForTest(t, tokenLoginYAML(srv.URL), sessions)
+
+	stats, err := s.Fetch(t.Context(), domain.Tracker{
+		ID:          1,
+		Credentials: `{"username":"testuser","password":"testpass"}`,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(100), stats.Uploaded)
+	require.NotEmpty(t, savedSession)
+	assert.Equal(t, int32(1), loginCalls.Load())
+
+	// Second fetch reuses the persisted session: no further login call, and
+	// UpdateSession is not invoked again (the mock's .Once() enforces this).
+	stats, err = s.Fetch(t.Context(), domain.Tracker{
+		ID:          1,
+		Credentials: `{"username":"testuser","password":"testpass"}`,
+		SessionData: savedSession,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(100), stats.Uploaded)
+	assert.Equal(t, int32(1), loginCalls.Load())
+	assert.Equal(t, int32(2), statsCalls.Load())
+}
+
+// TestYAMLScraper_SessionRenewal verifies that a stale/invalid stored session
+// triggers a transparent fresh login and retry, and that the renewed session
+// is persisted.
+func TestYAMLScraper_SessionRenewal(t *testing.T) {
+	var loginCalls atomic.Int32
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/login":
+			n := loginCalls.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"token":"tok-` + strconv.Itoa(int(n)) + `"}`))
+		case "/stats":
+			if r.Header.Get("Authorization") != "Bearer tok-1" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"uploaded":100,"downloaded":50,"ratio":2.0}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	sessions := mocks.NewMockTrackerRepository(t)
+	var savedSession string
+	sessions.EXPECT().
+		UpdateSession(uint(1), mock.Anything).
+		Run(func(_ uint, data string) { savedSession = data }).
+		Return(nil).
+		Once()
+
+	s := scraper.LoadFromYAMLWithSessionsForTest(t, tokenLoginYAML(srv.URL), sessions)
+
+	stats, err := s.Fetch(t.Context(), domain.Tracker{
+		ID:          1,
+		Credentials: `{"username":"testuser","password":"testpass"}`,
+		// Simulates a previously stored session that the server no longer honors.
+		SessionData: `{"captures":{"token":"stale-token"}}`,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(100), stats.Uploaded)
+	assert.Equal(t, int32(1), loginCalls.Load())
+	assert.Contains(t, savedSession, "tok-1")
 }

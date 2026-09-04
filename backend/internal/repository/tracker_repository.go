@@ -89,6 +89,15 @@ func (r *trackerRepository) Delete(id uint) error {
 	return nil
 }
 
+func (r *trackerRepository) UpdateSession(trackerID uint, sessionData string) error {
+	if err := r.db.Model(&domain.Tracker{}).
+		Where("id = ?", trackerID).
+		Update("session_data", sessionData).Error; err != nil {
+		return fmt.Errorf("updating session for tracker %d: %w", trackerID, err)
+	}
+	return nil
+}
+
 func (r *trackerRepository) UpdateScrapeStatus(trackerID uint, lastError string) error {
 	now := time.Now().UTC()
 	if err := r.db.Model(&domain.Tracker{}).

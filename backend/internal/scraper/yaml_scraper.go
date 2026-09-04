@@ -22,6 +22,10 @@ import (
 // YAMLScraper implements domain.TrackerScraper from a YAML definition file.
 type YAMLScraper struct {
 	def Definition
+	// sessions persists reusable login sessions (cookies, auth captures)
+	// between fetches. May be nil (e.g. in unit tests), in which case every
+	// fetch performs a fresh login when the definition requires one.
+	sessions domain.TrackerRepository
 }
 
 func (ys *YAMLScraper) logger() *logrus.Entry {
@@ -86,8 +90,46 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 		Jar:     jar,
 	}
 
+	siteURL, err := url.Parse(sitelink)
+	if err != nil {
+		return nil, fmt.Errorf("%s: parsing sitelink: %w", ys.def.ID, err)
+	}
+
+	reused := false
 	if ys.def.Login != nil {
-		if err := ys.doLogin(ctx, client, sitelink, ys.def.Login, tctx); err != nil {
+		if session := decodeSession(tracker.SessionData); session != nil {
+			applySession(jar, siteURL, session)
+			for k, v := range session.Captures {
+				tctx.Captures[k] = v
+			}
+			reused = true
+			ys.logger().Debug("scraper_session_reused")
+		} else {
+			if err := ys.login(ctx, client, sitelink, tctx, tracker); err != nil {
+				ys.logger().WithError(err).WithFields(logrus.Fields{
+					"tracker_id":   tracker.ID,
+					"tracker_name": tracker.Name,
+					"sitelink":     sitelink,
+				}).Warn("scraper_login_failed")
+				return nil, fmt.Errorf("%s: login: %w", ys.def.ID, err)
+			}
+			ys.persistSession(ctx, tracker.ID, jar, siteURL, tctx.Captures)
+		}
+	}
+
+	stats, err := ys.doStats(ctx, client, sitelink, tctx)
+	if err != nil && reused {
+		// The reused session may have expired: force a fresh login and retry once.
+		ys.logger().WithError(err).Debug("scraper_stale_session_reauthenticating")
+		jar, err = cookiejar.New(nil)
+		if err != nil {
+			return nil, fmt.Errorf("%s: creating cookie jar: %w", ys.def.ID, err)
+		}
+		client.Jar = jar
+		tctx.Captures = make(map[string]string)
+		tctx.Result = make(map[string]string)
+
+		if err := ys.login(ctx, client, sitelink, tctx, tracker); err != nil {
 			ys.logger().WithError(err).WithFields(logrus.Fields{
 				"tracker_id":   tracker.ID,
 				"tracker_name": tracker.Name,
@@ -95,10 +137,10 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 			}).Warn("scraper_login_failed")
 			return nil, fmt.Errorf("%s: login: %w", ys.def.ID, err)
 		}
-		ys.logger().Info("scraper_login_successful")
-	}
+		ys.persistSession(ctx, tracker.ID, jar, siteURL, tctx.Captures)
 
-	stats, err := ys.doStats(ctx, client, sitelink, tctx)
+		stats, err = ys.doStats(ctx, client, sitelink, tctx)
+	}
 	if err != nil {
 		ys.logger().WithError(err).WithFields(logrus.Fields{
 			"tracker_id":   tracker.ID,
@@ -108,6 +150,39 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 		return nil, fmt.Errorf("%s: %w", ys.def.ID, err)
 	}
 	return stats, nil
+}
+
+// login runs the definition's login flow and logs success.
+func (ys *YAMLScraper) login(ctx context.Context, client *http.Client, sitelink string, tctx *TemplateContext, tracker domain.Tracker) error {
+	if err := ys.doLogin(ctx, client, sitelink, ys.def.Login, tctx); err != nil {
+		return err
+	}
+	ys.logger().WithFields(logrus.Fields{
+		"tracker_id":   tracker.ID,
+		"tracker_name": tracker.Name,
+	}).Info("scraper_login_successful")
+	return nil
+}
+
+// persistSession saves the current cookie jar and captured auth values so the
+// next Fetch can skip logging in. It is a best-effort operation: a missing
+// session store, a zero tracker ID (unsaved/test trackers), or a context that
+// disables persistence (TrackerService.Test / TestByID) are silently skipped.
+func (ys *YAMLScraper) persistSession(ctx context.Context, trackerID uint, jar *cookiejar.Jar, siteURL *url.URL, captures map[string]string) {
+	if ys.sessions == nil || trackerID == 0 || domain.SessionPersistDisabled(ctx) {
+		return
+	}
+	data, err := encodeSession(jar, siteURL, captures)
+	if err != nil {
+		ys.logger().WithError(err).Warn("scraper_session_encode_failed")
+		return
+	}
+	if data == "" {
+		return
+	}
+	if err := ys.sessions.UpdateSession(trackerID, data); err != nil {
+		ys.logger().WithError(err).Warn("scraper_session_persist_failed")
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +213,6 @@ func (ys *YAMLScraper) doLogin(ctx context.Context, client *http.Client, sitelin
 func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sitelink string, login *LoginDef, tctx *TemplateContext) error {
 	loginURL := joinURL(sitelink, login.Path)
 
-	ys.logger().WithField("url", loginURL).Debug("scraper_login_page_get")
 	pageBody, err := ys.doGet(ctx, client, loginURL, nil)
 	if err != nil {
 		return fmt.Errorf("fetching login page: %w", err)
@@ -221,16 +295,11 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 		return http.ErrUseLastResponse
 	}
 
-	resp, err := noRedirClient.Do(req)
+	resp, err := ys.doClientRequest(&noRedirClient, req)
 	if err != nil {
 		return fmt.Errorf("POST %s: %w", submitURL, err)
 	}
 	defer resp.Body.Close()
-
-	ys.logger().WithFields(logrus.Fields{
-		"url":    submitURL,
-		"status": resp.StatusCode,
-	}).Debug("scraper_login_submit_response")
 
 	// A redirect means login succeeded — the server is directing us elsewhere.
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
@@ -264,7 +333,6 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 // This is the correct method for API-first trackers like Torr9.
 func (ys *YAMLScraper) doJSONLogin(ctx context.Context, client *http.Client, sitelink string, login *LoginDef, tctx *TemplateContext) error {
 	loginURL := joinURL(sitelink, login.Path)
-	ys.logger().WithField("url", loginURL).Debug("scraper_json_login_post")
 
 	body := make(map[string]interface{})
 	for k, v := range login.Inputs {
@@ -286,16 +354,11 @@ func (ys *YAMLScraper) doJSONLogin(ctx context.Context, client *http.Client, sit
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	resp, err := ys.doClientRequest(client, req)
 	if err != nil {
 		return fmt.Errorf("POST %s: %w", loginURL, err)
 	}
 	defer resp.Body.Close()
-
-	ys.logger().WithFields(logrus.Fields{
-		"url":    loginURL,
-		"status": resp.StatusCode,
-	}).Debug("scraper_json_login_response")
 
 	if resp.StatusCode >= 400 {
 		ys.logger().WithFields(logrus.Fields{
@@ -333,7 +396,6 @@ func (ys *YAMLScraper) doJSONLogin(ctx context.Context, client *http.Client, sit
 // doPostLogin POSTs form-encoded data without a preceding GET.
 func (ys *YAMLScraper) doPostLogin(ctx context.Context, client *http.Client, sitelink string, login *LoginDef, tctx *TemplateContext) error {
 	loginURL := joinURL(sitelink, login.Path)
-	ys.logger().WithField("url", loginURL).Debug("scraper_form_login_post")
 
 	form := url.Values{}
 	for k, v := range login.Inputs {
@@ -350,7 +412,7 @@ func (ys *YAMLScraper) doPostLogin(ctx context.Context, client *http.Client, sit
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := client.Do(req)
+	resp, err := ys.doClientRequest(client, req)
 	if err != nil {
 		return fmt.Errorf("POST %s: %w", loginURL, err)
 	}
@@ -429,7 +491,6 @@ func (ys *YAMLScraper) doStats(ctx context.Context, client *http.Client, sitelin
 		headers[k] = rendered
 	}
 
-	ys.logger().WithField("url", statsURL).Debug("scraper_stats_get")
 	body, err := ys.doGet(ctx, client, statsURL, headers)
 	if err != nil {
 		return nil, err
@@ -512,6 +573,21 @@ func (ys *YAMLScraper) doStats(ctx context.Context, client *http.Client, sitelin
 // HTTP helpers
 // ---------------------------------------------------------------------------
 
+// doClientRequest runs req via client and logs "METHOD url -> status" on a
+// single line for every completed HTTP request the scraper makes.
+func (ys *YAMLScraper) doClientRequest(client *http.Client, req *http.Request) (*http.Response, error) {
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	ys.logger().WithFields(logrus.Fields{
+		"method": req.Method,
+		"url":    req.URL.String(),
+		"status": resp.StatusCode,
+	}).Infof("%s %s -> %d", req.Method, req.URL.String(), resp.StatusCode)
+	return resp, nil
+}
+
 func (ys *YAMLScraper) doGet(ctx context.Context, client *http.Client, rawURL string, headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
@@ -520,7 +596,7 @@ func (ys *YAMLScraper) doGet(ctx context.Context, client *http.Client, rawURL st
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	resp, err := client.Do(req)
+	resp, err := ys.doClientRequest(client, req)
 	if err != nil {
 		return nil, fmt.Errorf("GET %s: %w", rawURL, err)
 	}
@@ -529,6 +605,68 @@ func (ys *YAMLScraper) doGet(ctx context.Context, client *http.Client, rawURL st
 		return nil, fmt.Errorf("GET %s returned HTTP %d", rawURL, resp.StatusCode)
 	}
 	return io.ReadAll(resp.Body)
+}
+
+// ---------------------------------------------------------------------------
+// Session persistence
+// ---------------------------------------------------------------------------
+
+// storedSession is the JSON shape persisted in Tracker.SessionData.
+type storedSession struct {
+	Cookies  []storedCookie    `json:"cookies,omitempty"`
+	Captures map[string]string `json:"captures,omitempty"`
+}
+
+type storedCookie struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// decodeSession parses a tracker's stored session blob. It returns nil if the
+// blob is empty, invalid, or carries no reusable state.
+func decodeSession(raw string) *storedSession {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var s storedSession
+	if err := json.Unmarshal([]byte(raw), &s); err != nil {
+		return nil
+	}
+	if len(s.Cookies) == 0 && len(s.Captures) == 0 {
+		return nil
+	}
+	return &s
+}
+
+// applySession seeds the cookie jar with a previously stored session's cookies
+// for siteURL. Captures are applied separately by the caller.
+func applySession(jar *cookiejar.Jar, siteURL *url.URL, s *storedSession) {
+	if len(s.Cookies) == 0 {
+		return
+	}
+	cookies := make([]*http.Cookie, 0, len(s.Cookies))
+	for _, c := range s.Cookies {
+		cookies = append(cookies, &http.Cookie{Name: c.Name, Value: c.Value})
+	}
+	jar.SetCookies(siteURL, cookies)
+}
+
+// encodeSession serialises the jar's cookies for siteURL plus any auth
+// captures into the JSON blob stored on the tracker. Returns "" if there is
+// nothing worth persisting.
+func encodeSession(jar *cookiejar.Jar, siteURL *url.URL, captures map[string]string) (string, error) {
+	s := storedSession{Captures: captures}
+	for _, c := range jar.Cookies(siteURL) {
+		s.Cookies = append(s.Cookies, storedCookie{Name: c.Name, Value: c.Value})
+	}
+	if len(s.Cookies) == 0 && len(s.Captures) == 0 {
+		return "", nil
+	}
+	data, err := json.Marshal(s)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 // ---------------------------------------------------------------------------

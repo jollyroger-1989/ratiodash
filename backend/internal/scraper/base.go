@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
 
@@ -121,6 +122,12 @@ func (b *BaseScraper) DoRequest(ctx context.Context, method, rawURL string, cred
 		return nil, fmt.Errorf("GET %s: %w", rawURL, err)
 	}
 	defer resp.Body.Close()
+
+	logrus.WithFields(logrus.Fields{
+		"method": method,
+		"url":    rawURL,
+		"status": resp.StatusCode,
+	}).Infof("%s %s -> %d", method, rawURL, resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
 		switch {

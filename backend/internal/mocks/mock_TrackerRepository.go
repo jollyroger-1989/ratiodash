@@ -331,6 +331,53 @@ func (_c *MockTrackerRepository_Update_Call) RunAndReturn(run func(*domain.Track
 	return _c
 }
 
+// UpdateSession provides a mock function with given fields: trackerID, sessionData
+func (_m *MockTrackerRepository) UpdateSession(trackerID uint, sessionData string) error {
+	ret := _m.Called(trackerID, sessionData)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateSession")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint, string) error); ok {
+		r0 = rf(trackerID, sessionData)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockTrackerRepository_UpdateSession_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateSession'
+type MockTrackerRepository_UpdateSession_Call struct {
+	*mock.Call
+}
+
+// UpdateSession is a helper method to define mock.On call
+//   - trackerID uint
+//   - sessionData string
+func (_e *MockTrackerRepository_Expecter) UpdateSession(trackerID interface{}, sessionData interface{}) *MockTrackerRepository_UpdateSession_Call {
+	return &MockTrackerRepository_UpdateSession_Call{Call: _e.mock.On("UpdateSession", trackerID, sessionData)}
+}
+
+func (_c *MockTrackerRepository_UpdateSession_Call) Run(run func(trackerID uint, sessionData string)) *MockTrackerRepository_UpdateSession_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(uint), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockTrackerRepository_UpdateSession_Call) Return(_a0 error) *MockTrackerRepository_UpdateSession_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockTrackerRepository_UpdateSession_Call) RunAndReturn(run func(uint, string) error) *MockTrackerRepository_UpdateSession_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateScrapeStatus provides a mock function with given fields: trackerID, lastError
 func (_m *MockTrackerRepository) UpdateScrapeStatus(trackerID uint, lastError string) error {
 	ret := _m.Called(trackerID, lastError)

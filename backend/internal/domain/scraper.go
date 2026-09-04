@@ -30,6 +30,23 @@ type TrackerScraper interface {
 	Fetch(ctx context.Context, tracker Tracker) (*TrackerStats, error)
 }
 
+// sessionPersistDisabledKey is the context key used by WithSessionPersistDisabled.
+type sessionPersistDisabledKey struct{}
+
+// WithSessionPersistDisabled returns a context instructing scrapers not to
+// persist any renewed login session (cookies/auth captures) back to storage.
+// Used by TrackerService.Test and TestByID, which validate credentials
+// without side effects.
+func WithSessionPersistDisabled(ctx context.Context) context.Context {
+	return context.WithValue(ctx, sessionPersistDisabledKey{}, true)
+}
+
+// SessionPersistDisabled reports whether ctx disables session persistence.
+func SessionPersistDisabled(ctx context.Context) bool {
+	disabled, _ := ctx.Value(sessionPersistDisabledKey{}).(bool)
+	return disabled
+}
+
 // ScraperRegistry provides access to all registered TrackerScrapers by key.
 type ScraperRegistry interface {
 	Get(key string) (TrackerScraper, bool)

@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/jose/ratiodash/internal/domain"
 )
 
 // ParseBytesForTest exposes parseBytes for unit tests.
@@ -35,10 +37,21 @@ func LoadFromYAMLForTest(t testing.TB, raw string) *YAMLScraper {
 	return &YAMLScraper{def: def}
 }
 
+// LoadFromYAMLWithSessionsForTest is LoadFromYAMLForTest but also wires a
+// session store, for tests exercising session reuse/renewal.
+func LoadFromYAMLWithSessionsForTest(t testing.TB, raw string, sessions domain.TrackerRepository) *YAMLScraper {
+	t.Helper()
+	var def Definition
+	if err := yaml.Unmarshal([]byte(raw), &def); err != nil {
+		t.Fatalf("LoadFromYAMLWithSessionsForTest: parsing YAML: %v", err)
+	}
+	return &YAMLScraper{def: def, sessions: sessions}
+}
+
 // LoadSingleForTest loads one YAML definition file and returns a YAMLScraper.
 func LoadSingleForTest(t testing.TB, path string) *YAMLScraper {
 	t.Helper()
-	s, err := loadFile(path)
+	s, err := loadFile(path, nil)
 	if err != nil {
 		t.Fatalf("LoadSingleForTest: %v", err)
 	}

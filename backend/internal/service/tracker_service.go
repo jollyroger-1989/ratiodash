@@ -153,7 +153,8 @@ func (s *trackerService) Test(scraperKey, credentialsJSON string) error {
 	if creds == "" {
 		creds = "{}"
 	}
-	_, err := sc.Fetch(context.Background(), domain.Tracker{
+	ctx := domain.WithSessionPersistDisabled(context.Background())
+	_, err := sc.Fetch(ctx, domain.Tracker{
 		ScraperKey:  scraperKey,
 		Credentials: creds,
 	})
@@ -184,6 +185,11 @@ func (s *trackerService) TestByID(id uint, credentialsOverride string) error {
 
 	testTracker := *tracker
 	testTracker.Credentials = effective
-	_, err = sc.Fetch(context.Background(), testTracker)
+	// A test must validate the (possibly overridden) credentials against a
+	// fresh login rather than silently reusing a cached session, and must not
+	// persist whatever session that fresh login produces.
+	testTracker.SessionData = ""
+	ctx := domain.WithSessionPersistDisabled(context.Background())
+	_, err = sc.Fetch(ctx, testTracker)
 	return err
 }

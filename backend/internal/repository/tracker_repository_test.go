@@ -204,6 +204,45 @@ func TestTrackerRepository_Delete(t *testing.T) {
 	})
 }
 
+func TestTrackerRepository_UpdateSession(t *testing.T) {
+	t.Run("persists session data", func(t *testing.T) {
+		repo := repository.NewTrackerRepository(testutil.NewDB(t))
+		tr := newTracker("Alpha")
+		require.NoError(t, repo.Create(tr))
+
+		require.NoError(t, repo.UpdateSession(tr.ID, `{"cookies":[{"name":"session","value":"abc"}]}`))
+
+		found, err := repo.FindByID(tr.ID)
+		require.NoError(t, err)
+		assert.Equal(t, `{"cookies":[{"name":"session","value":"abc"}]}`, found.SessionData)
+	})
+
+	t.Run("clears session data", func(t *testing.T) {
+		repo := repository.NewTrackerRepository(testutil.NewDB(t))
+		tr := newTracker("Alpha")
+		require.NoError(t, repo.Create(tr))
+		require.NoError(t, repo.UpdateSession(tr.ID, `{"cookies":[{"name":"session","value":"abc"}]}`))
+
+		require.NoError(t, repo.UpdateSession(tr.ID, ""))
+
+		found, err := repo.FindByID(tr.ID)
+		require.NoError(t, err)
+		assert.Empty(t, found.SessionData)
+	})
+
+	t.Run("returns error on database failure", func(t *testing.T) {
+		db := testutil.NewDB(t)
+		sqlDB, err := db.DB()
+		require.NoError(t, err)
+		require.NoError(t, sqlDB.Close())
+		repo := repository.NewTrackerRepository(db)
+
+		err = repo.UpdateSession(1, "{}")
+
+		assert.Error(t, err)
+	})
+}
+
 func TestTrackerRepository_UpdateScrapeStatus(t *testing.T) {
 	t.Run("sets last_error and last_scraped_at on failure", func(t *testing.T) {
 		repo := repository.NewTrackerRepository(testutil.NewDB(t))

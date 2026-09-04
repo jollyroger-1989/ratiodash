@@ -37,10 +37,14 @@ func RedactCredentials(raw string) map[string]string {
 
 // Tracker represents a registered torrent tracker whose stats are being tracked.
 type Tracker struct {
-	ID            uint          `json:"id"                  gorm:"primaryKey"`
-	Name          string        `json:"name"                gorm:"uniqueIndex;not null"`
-	ScraperKey    string        `json:"scraper_key"         gorm:"not null"`
-	Credentials   string        `json:"-"                   gorm:"not null;default:'{}'"`
+	ID          uint   `json:"id"                  gorm:"primaryKey"`
+	Name        string `json:"name"                gorm:"uniqueIndex;not null"`
+	ScraperKey  string `json:"scraper_key"         gorm:"not null"`
+	Credentials string `json:"-"                   gorm:"not null;default:'{}'"`
+	// SessionData holds a scraper-opaque JSON blob (session cookies, auth
+	// tokens/captures) saved after a successful login so future scrapes can
+	// skip re-authenticating. Never exposed via the API.
+	SessionData   string        `json:"-"                   gorm:"column:session_data;not null;default:''"`
 	CronExpr      string        `json:"cron_expr"           gorm:"not null;default:'@hourly'"`
 	Active        bool          `json:"active"              gorm:"not null;default:true"`
 	LastError     string        `json:"last_error"          gorm:"not null;default:''"`
@@ -84,6 +88,9 @@ type TrackerRepository interface {
 	// UpdateScrapeStatus records the outcome of the most recent scrape attempt.
 	// lastError is empty on success, non-empty on failure.
 	UpdateScrapeStatus(trackerID uint, lastError string) error
+	// UpdateSession persists a scraper's reusable login session (cookies, auth
+	// captures) so subsequent scrapes can skip re-authenticating.
+	UpdateSession(trackerID uint, sessionData string) error
 }
 
 // TrackerService is the business-logic abstraction for Tracker operations.

@@ -13,12 +13,15 @@ import (
 
 // Loader discovers and parses all YAML scraper definitions from a directory.
 type Loader struct {
-	dir string
+	dir      string
+	sessions domain.TrackerRepository
 }
 
 // NewLoader creates a Loader that reads definitions from cfg.ScrapersDir.
-func NewLoader(cfg *config.Config) *Loader {
-	return &Loader{dir: cfg.ScrapersDir}
+// sessions is used by the resulting scrapers to persist reusable login
+// sessions (cookies, auth captures) between fetches.
+func NewLoader(cfg *config.Config, sessions domain.TrackerRepository) *Loader {
+	return &Loader{dir: cfg.ScrapersDir, sessions: sessions}
 }
 
 // Load reads every *.yml file in the configured directory and returns one
@@ -44,7 +47,7 @@ func (l *Loader) Load() ([]domain.TrackerScraper, error) {
 
 	scrapers := make([]domain.TrackerScraper, 0, len(matches))
 	for _, path := range matches {
-		s, err := loadFile(path)
+		s, err := loadFile(path, l.sessions)
 		if err != nil {
 			return nil, fmt.Errorf("loading %q: %w", path, err)
 		}
@@ -54,7 +57,7 @@ func (l *Loader) Load() ([]domain.TrackerScraper, error) {
 	return scrapers, nil
 }
 
-func loadFile(path string) (*YAMLScraper, error) {
+func loadFile(path string, sessions domain.TrackerRepository) (*YAMLScraper, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -72,5 +75,5 @@ func loadFile(path string) (*YAMLScraper, error) {
 		return nil, fmt.Errorf("definition %q is missing stats.path", def.ID)
 	}
 
-	return &YAMLScraper{def: def}, nil
+	return &YAMLScraper{def: def, sessions: sessions}, nil
 }

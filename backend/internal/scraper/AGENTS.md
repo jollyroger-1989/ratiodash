@@ -104,6 +104,31 @@ If a selector still matches both outer and inner nodes, set `match: last`.
 
 ---
 
+## Session Persistence
+
+`Tracker.SessionData` stores an opaque JSON blob (cookies + login `Captures`,
+e.g. bearer tokens) saved after a successful login so subsequent `Fetch`
+calls can skip re-authenticating:
+
+- If the tracker carries a stored session, `YAMLScraper.Fetch` seeds the
+  cookie jar and `.Captures` from it and goes straight to the stats request —
+  `login` is not called.
+- If there is no stored session, `login` runs as usual and the resulting
+  cookies/captures are persisted via `domain.TrackerRepository.UpdateSession`.
+- If a reused session fails the stats request, `Fetch` transparently forces
+  one fresh login, retries the stats request once, and persists the renewed
+  session. There is no separate expiry check — renewal is failure-driven.
+- `YAMLScraper.sessions` may be nil (e.g. YAML fixtures built directly in
+  tests via `LoadFromYAMLForTest`); in that case every fetch logs in fresh
+  and nothing is persisted.
+- `domain.WithSessionPersistDisabled(ctx)` marks a context so a fetch never
+  writes a session back to storage. `TrackerService.Test` and `TestByID` use
+  it — those code paths must remain side-effect free, and `TestByID` also
+  clears `SessionData` before fetching so it always validates a real login
+  rather than a cached one.
+
+---
+
 ## Credentials And URL Safety
 
 Credentials are parsed from tracker JSON into a string map.
