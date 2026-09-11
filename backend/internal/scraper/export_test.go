@@ -51,9 +51,20 @@ func LoadFromYAMLWithSessionsForTest(t testing.TB, raw string, sessions domain.T
 // LoadSingleForTest loads one YAML definition file and returns a YAMLScraper.
 func LoadSingleForTest(t testing.TB, path string) *YAMLScraper {
 	t.Helper()
-	s, err := loadFile(path, nil)
+	s, err := loadFile(path, nil, nil)
 	if err != nil {
 		t.Fatalf("LoadSingleForTest: %v", err)
 	}
 	return s
+}
+
+// LoadFromYAMLWithMultisolverrForTest is LoadFromYAMLForTest but also wires a
+// multisolverr config repository, for tests exercising the proxy transport.
+func LoadFromYAMLWithMultisolverrForTest(t testing.TB, raw string, multisolverr domain.MultisolverrConfigRepository) *YAMLScraper {
+	t.Helper()
+	var def Definition
+	if err := yaml.Unmarshal([]byte(raw), &def); err != nil {
+		t.Fatalf("LoadFromYAMLWithMultisolverrForTest: parsing YAML: %v", err)
+	}
+	return &YAMLScraper{def: def, multisolverr: multisolverr}
 }

@@ -52,6 +52,7 @@ export interface Tracker {
   scraper_key: string
   cron_expr: string
   active: boolean
+  use_multisolverr: boolean
   last_error: string
   last_scraped_at: string | null
   created_at: string
@@ -66,6 +67,7 @@ export interface CreateTrackerInput {
   credentials?: string
   cron_expr?: string
   active?: boolean
+  use_multisolverr?: boolean
 }
 
 export interface UpdateTrackerInput {
@@ -74,6 +76,7 @@ export interface UpdateTrackerInput {
   credentials?: string
   cron_expr?: string
   active?: boolean
+  use_multisolverr?: boolean
 }
 
 // ---- Stats types ----
@@ -262,6 +265,42 @@ export const settingsApi = {
 
   updateLanguage(language: string): Promise<void> {
     return http.patch('/settings/language', { language }).then(() => undefined)
+  }
+}
+
+// ---- Multisolverr proxy types ----
+
+export interface MultisolverrConfig {
+  id: number
+  enabled: boolean
+  base_url: string
+  timeout_seconds: number
+  has_api_key: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface UpdateMultisolverrConfigInput {
+  enabled?: boolean
+  base_url?: string
+  api_key?: string
+  timeout_seconds?: number
+}
+
+// ---- Multisolverr proxy API helpers ----
+
+export const multisolverrApi = {
+  get(): Promise<MultisolverrConfig> {
+    return http.get<MultisolverrConfig>('/settings/multisolverr').then((r) => r.data)
+  },
+
+  update(input: UpdateMultisolverrConfigInput): Promise<MultisolverrConfig> {
+    return http.patch<MultisolverrConfig>('/settings/multisolverr', input).then((r) => r.data)
+  },
+
+  /** Check that a multisolverr instance is reachable at the given base URL before saving. */
+  test(baseUrl: string): Promise<void> {
+    return http.post('/settings/multisolverr/test', { base_url: baseUrl }).then(() => undefined)
   }
 }
 

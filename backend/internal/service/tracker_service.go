@@ -62,11 +62,12 @@ func (s *trackerService) Create(input domain.CreateTrackerInput) (*domain.Tracke
 	}
 
 	tracker := &domain.Tracker{
-		Name:        input.Name,
-		ScraperKey:  input.ScraperKey,
-		Credentials: creds,
-		CronExpr:    cronExpr,
-		Active:      true,
+		Name:            input.Name,
+		ScraperKey:      input.ScraperKey,
+		Credentials:     creds,
+		CronExpr:        cronExpr,
+		Active:          true,
+		UseMultisolverr: input.UseMultisolverr,
 	}
 	if err := s.repo.Create(tracker); err != nil {
 		return nil, err
@@ -99,6 +100,9 @@ func (s *trackerService) Update(id uint, input domain.UpdateTrackerInput) (*doma
 	}
 	if input.Active != nil {
 		tracker.Active = *input.Active
+	}
+	if input.UseMultisolverr != nil {
+		tracker.UseMultisolverr = *input.UseMultisolverr
 	}
 
 	if err := s.repo.Update(tracker); err != nil {

@@ -10,4 +10,5 @@ var Module = fx.Options(
 	fx.Provide(NewNotifierConfigRepository),
 	fx.Provide(NewReportRepository),
 	fx.Provide(NewAlertConfigRepository),
+	fx.Provide(NewMultisolverrConfigRepository),
 )

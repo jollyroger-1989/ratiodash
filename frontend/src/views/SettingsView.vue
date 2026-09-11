@@ -91,6 +91,66 @@
       </form>
     </div>
 
+    <div class="settings-card multisolverr-card">
+      <h2 class="section-title">{{ $t('settings.multisolverr.title') }}</h2>
+      <p class="section-subtitle">
+        {{ $t('settings.multisolverr.subtitle') }}
+        <a href="https://github.com/jollyroger-1989/multisolverr" target="_blank" rel="noopener noreferrer">multisolverr</a>.
+      </p>
+
+      <form class="settings-form" @submit.prevent="saveMultisolverr">
+        <div class="field field-toggle">
+          <label class="toggle" :title="multisolverrForm.enabled ? $t('settings.notifiers.disable') : $t('settings.notifiers.enable')">
+            <input type="checkbox" v-model="multisolverrForm.enabled" />
+            <span class="toggle-slider"></span>
+          </label>
+          <span>{{ $t('settings.multisolverr.enabled') }}</span>
+        </div>
+
+        <div class="fields-row">
+          <div class="field">
+            <label for="ms-base-url">{{ $t('settings.multisolverr.baseUrl') }}</label>
+            <input
+              id="ms-base-url"
+              v-model="multisolverrForm.base_url"
+              type="url"
+              placeholder="http://multisolverr:8191"
+              autocomplete="off"
+            />
+          </div>
+          <div class="field">
+            <label for="ms-timeout">{{ $t('settings.multisolverr.timeout') }}</label>
+            <input id="ms-timeout" v-model.number="multisolverrForm.timeout_seconds" type="number" min="1" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="ms-api-key">{{ $t('settings.multisolverr.apiKey') }}</label>
+          <input
+            id="ms-api-key"
+            v-model="multisolverrForm.api_key"
+            type="password"
+            autocomplete="off"
+            :placeholder="multisolverrConfig?.has_api_key ? $t('trackers.modal.credentialPlaceholder') : ''"
+          />
+        </div>
+
+        <p v-if="multisolverrTestStatus === 'ok'" class="form-success">{{ $t('settings.multisolverr.testOk') }}</p>
+        <p v-if="multisolverrTestStatus === 'error'" class="form-error">{{ multisolverrTestError }}</p>
+        <p v-if="multisolverrError" class="form-error">{{ multisolverrError }}</p>
+        <p v-if="multisolverrSuccess" class="form-success">{{ $t('settings.multisolverr.saved') }}</p>
+
+        <div class="form-actions">
+          <button type="submit" class="submit-btn" :disabled="multisolverrSaving">
+            {{ multisolverrSaving ? $t('settings.multisolverr.saving') : $t('settings.multisolverr.save') }}
+          </button>
+          <button type="button" class="btn-test" :disabled="multisolverrTesting || !multisolverrForm.base_url" @click="testMultisolverr">
+            {{ multisolverrTesting ? $t('settings.multisolverr.testing') : $t('settings.multisolverr.test') }}
+          </button>
+        </div>
+      </form>
+    </div>
+
     <div class="settings-card api-clients-card">
       <div class="card-header-row">
         <div>
@@ -183,9 +243,11 @@ import {
   settingsApi,
   notifierConfigsApi,
   apiClientsApi,
+  multisolverrApi,
   type APIClient,
   type NotifierConfig,
   type NotifierTypeInfo,
+  type MultisolverrConfig,
 } from '@/services/api'
 import NotifierFormModal from '@/components/NotifierFormModal.vue'
 import APIClientFormModal from '@/components/APIClientFormModal.vue'
@@ -239,6 +301,70 @@ async function removeApiClient(id: number) {
 
 async function onAPIClientSaved() {
   await fetchApiClients()
+}
+
+// ---- Multisolverr proxy ----
+
+const multisolverrConfig = ref<MultisolverrConfig | null>(null)
+const multisolverrForm = ref({ enabled: false, base_url: '', api_key: '', timeout_seconds: 60 })
+const multisolverrSaving = ref(false)
+const multisolverrError = ref('')
+const multisolverrSuccess = ref(false)
+const multisolverrTesting = ref(false)
+const multisolverrTestStatus = ref<null | 'ok' | 'error'>(null)
+const multisolverrTestError = ref('')
+
+async function fetchMultisolverrConfig() {
+  const cfg = await multisolverrApi.get()
+  multisolverrConfig.value = cfg
+  multisolverrForm.value = {
+    enabled: cfg.enabled,
+    base_url: cfg.base_url,
+    api_key: '',
+    timeout_seconds: cfg.timeout_seconds,
+  }
+}
+
+async function saveMultisolverr() {
+  multisolverrSaving.value = true
+  multisolverrError.value = ''
+  multisolverrSuccess.value = false
+  try {
+    const patch: Record<string, string | boolean | number> = {
+      enabled: multisolverrForm.value.enabled,
+      base_url: multisolverrForm.value.base_url,
+      timeout_seconds: multisolverrForm.value.timeout_seconds,
+    }
+    if (multisolverrForm.value.api_key) patch.api_key = multisolverrForm.value.api_key
+    const updated = await multisolverrApi.update(patch)
+    multisolverrConfig.value = updated
+    multisolverrForm.value = {
+      enabled: updated.enabled,
+      base_url: updated.base_url,
+      api_key: '',
+      timeout_seconds: updated.timeout_seconds,
+    }
+    multisolverrSuccess.value = true
+  } catch (e: any) {
+    multisolverrError.value = e?.response?.data?.detail ?? e?.message ?? t('settings.multisolverr.error')
+  } finally {
+    multisolverrSaving.value = false
+  }
+}
+
+async function testMultisolverr() {
+  multisolverrTesting.value = true
+  multisolverrTestStatus.value = null
+  multisolverrTestError.value = ''
+  try {
+    await multisolverrApi.test(multisolverrForm.value.base_url)
+    multisolverrTestStatus.value = 'ok'
+  } catch (e: any) {
+    multisolverrTestStatus.value = 'error'
+    multisolverrTestError.value = e?.response?.data?.detail ?? e?.message ?? t('settings.multisolverr.testError')
+  } finally {
+    multisolverrTesting.value = false
+  }
 }
 
 async function submit() {
@@ -321,7 +447,7 @@ async function onNotifierSaved() {
 }
 
 onMounted(async () => {
-  await Promise.all([fetchNotifiers(), fetchApiClients()])
+  await Promise.all([fetchNotifiers(), fetchApiClients(), fetchMultisolverrConfig()])
 })
 </script>
 
@@ -511,6 +637,22 @@ onMounted(async () => {
   margin-bottom: 1.5rem;
 }
 
+.multisolverr-card {
+  margin-bottom: 1.5rem;
+}
+
+.multisolverr-card .section-subtitle a {
+  color: var(--accent);
+}
+
+.field-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
 .api-clients-card {
   margin-bottom: 1.5rem;
 }
@@ -689,6 +831,7 @@ onMounted(async () => {
 }
 
 .toggle-slider {
+  display: inline-block;
   width: 36px;
   height: 20px;
   background: rgba(255, 255, 255, 0.12);

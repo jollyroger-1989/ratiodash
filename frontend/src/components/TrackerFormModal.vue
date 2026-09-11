@@ -51,6 +51,12 @@
               />
             </div>
           </div>
+          <div v-if="multisolverrEnabled" class="field-checkbox">
+            <label>
+              <input type="checkbox" v-model="form.use_multisolverr" />
+              {{ $t('trackers.modal.useMultisolverr') }}
+            </label>
+          </div>
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="saving || testing">
               {{ saving
@@ -74,7 +80,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { scrapersApi, trackersApi, type Tracker, type ScraperDef } from '@/services/api'
+import { scrapersApi, trackersApi, multisolverrApi, type Tracker, type ScraperDef } from '@/services/api'
 import { useTrackersStore } from '@/stores/trackers'
 import BaseModal from '@/components/BaseModal.vue'
 import CronSelect from '@/components/CronSelect.vue'
@@ -96,8 +102,9 @@ const editMode = computed(() => props.tracker !== undefined)
 
 const scrapers = ref<ScraperDef[]>([])
 const loadingScrapers = ref(false)
+const multisolverrEnabled = ref(false)
 
-const form = ref({ name: '', scraper_key: '', cron_expr: '@hourly' })
+const form = ref({ name: '', scraper_key: '', cron_expr: '@hourly', use_multisolverr: false })
 const credentialValues = ref<Record<string, string>>({})
 const saving = ref(false)
 const formError = ref('')
@@ -132,6 +139,12 @@ watch(
       }
     }
 
+    try {
+      multisolverrEnabled.value = (await multisolverrApi.get()).enabled
+    } catch {
+      multisolverrEnabled.value = false
+    }
+
     initForm()
   }
 )
@@ -142,6 +155,7 @@ function initForm() {
       name: props.tracker.name,
       scraper_key: props.tracker.scraper_key,
       cron_expr: props.tracker.cron_expr,
+      use_multisolverr: props.tracker.use_multisolverr,
     }
     credentialValues.value = Object.fromEntries(
       (selectedScraper.value?.credential_fields ?? []).map((f) => [
@@ -151,7 +165,7 @@ function initForm() {
     )
   } else {
     const first = scrapers.value.find((s) => !s.deprecated) ?? scrapers.value[0] ?? null
-    form.value = { name: '', scraper_key: first?.key ?? '', cron_expr: '@hourly' }
+    form.value = { name: '', scraper_key: first?.key ?? '', cron_expr: '@hourly', use_multisolverr: false }
     credentialValues.value = Object.fromEntries(
       (first?.credential_fields ?? []).map((f) => [f.key, ''])
     )
@@ -207,6 +221,7 @@ async function submit() {
       const patch: Record<string, string | boolean> = {
         name: form.value.name,
         cron_expr: form.value.cron_expr,
+        use_multisolverr: form.value.use_multisolverr,
       }
       const creds = buildCredentialsJson()
       if (creds !== '{}') patch.credentials = creds

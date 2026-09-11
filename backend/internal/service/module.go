@@ -21,4 +21,5 @@ var Module = fx.Options(
 	),
 	fx.Provide(NewNotifierConfigService),
 	fx.Provide(NewReportServiceWithAuthRepo),
+	fx.Provide(NewMultisolverrConfigService),
 )

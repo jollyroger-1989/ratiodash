@@ -11,6 +11,7 @@ var Module = fx.Options(
 	fx.Provide(NewNotifierConfigHandler),
 	fx.Provide(NewReportHandler),
 	fx.Provide(NewAlertConfigHandler),
+	fx.Provide(NewMultisolverrConfigHandler),
 	fx.Invoke(RegisterTrackerRoutes),
 	fx.Invoke(RegisterStatsRoutes),
 	fx.Invoke(RegisterScraperRoutes),
@@ -19,4 +20,5 @@ var Module = fx.Options(
 	fx.Invoke(RegisterNotifierConfigRoutes),
 	fx.Invoke(RegisterReportRoutes),
 	fx.Invoke(RegisterAlertConfigRoutes),
+	fx.Invoke(RegisterMultisolverrConfigRoutes),
 )

@@ -145,10 +145,11 @@ func (h *TrackerHandler) UpdateTracker(ctx context.Context, input *UpdateTracker
 	if err := h.refresh.RefreshTracker(ctx, tracker.ID); err != nil {
 		// Restore old state on scrape failure
 		_, _ = h.service.Update(input.ID, domain.UpdateTrackerInput{
-			Name:        &old.Name,
-			Credentials: &old.Credentials,
-			CronExpr:    &old.CronExpr,
-			Active:      &old.Active,
+			Name:            &old.Name,
+			Credentials:     &old.Credentials,
+			CronExpr:        &old.CronExpr,
+			Active:          &old.Active,
+			UseMultisolverr: &old.UseMultisolverr,
 		})
 		return nil, huma.Error422UnprocessableEntity("scrape failed — check the tracker URL and credentials")
 	}

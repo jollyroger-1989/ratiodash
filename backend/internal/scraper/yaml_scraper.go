@@ -17,6 +17,7 @@ import (
 	"github.com/tidwall/gjson"
 
 	"github.com/jose/ratiodash/internal/domain"
+	"github.com/jose/ratiodash/internal/proxy"
 )
 
 // YAMLScraper implements domain.TrackerScraper from a YAML definition file.
@@ -26,6 +27,10 @@ type YAMLScraper struct {
 	// between fetches. May be nil (e.g. in unit tests), in which case every
 	// fetch performs a fresh login when the definition requires one.
 	sessions domain.TrackerRepository
+	// multisolverr provides the multisolverr proxy configuration used when a
+	// tracker has UseMultisolverr set. May be nil (e.g. in unit tests), in
+	// which case Fetch refuses to honor UseMultisolverr.
+	multisolverr domain.MultisolverrConfigRepository
 }
 
 func (ys *YAMLScraper) logger() *logrus.Entry {
@@ -90,6 +95,14 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 		Jar:     jar,
 	}
 
+	if tracker.UseMultisolverr {
+		transport, err := ys.multisolverrTransport()
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", ys.def.ID, err)
+		}
+		client.Transport = transport
+	}
+
 	siteURL, err := url.Parse(sitelink)
 	if err != nil {
 		return nil, fmt.Errorf("%s: parsing sitelink: %w", ys.def.ID, err)
@@ -150,6 +163,30 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 		return nil, fmt.Errorf("%s: %w", ys.def.ID, err)
 	}
 	return stats, nil
+}
+
+// multisolverrTransport builds an http.RoundTripper that routes requests
+// through the configured multisolverr proxy. It errors out (rather than
+// silently falling back to a direct request) when UseMultisolverr is set on
+// the tracker but no multisolverr proxy is configured and enabled, since a
+// silent fallback would just fail against the WAF again with a confusing
+// error.
+func (ys *YAMLScraper) multisolverrTransport() (http.RoundTripper, error) {
+	if ys.multisolverr == nil {
+		return nil, fmt.Errorf("multisolverr proxy is not available in this environment")
+	}
+	cfg, err := ys.multisolverr.Get()
+	if err != nil {
+		return nil, fmt.Errorf("loading multisolverr config: %w", err)
+	}
+	if !cfg.Enabled || cfg.BaseURL == "" {
+		return nil, fmt.Errorf("multisolverr proxy is not configured or enabled — check Settings")
+	}
+	return proxy.NewTransport(proxy.Config{
+		BaseURL: cfg.BaseURL,
+		APIKey:  cfg.APIKey,
+		Timeout: time.Duration(cfg.TimeoutSeconds) * time.Second,
+	}), nil
 }
 
 // login runs the definition's login flow and logs success.

@@ -1,6 +1,7 @@
 package scraper_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -660,4 +661,99 @@ func TestYAMLScraper_SessionRenewal(t *testing.T) {
 	assert.Equal(t, int64(100), stats.Uploaded)
 	assert.Equal(t, int32(1), loginCalls.Load())
 	assert.Contains(t, savedSession, "tok-1")
+}
+
+// ---------------------------------------------------------------------------
+// Multisolverr proxy
+// ---------------------------------------------------------------------------
+
+const multisolverrStatsYAML = `
+id: multisolverrtest
+settings:
+  - {name: url, type: text, label: URL, required: true}
+stats:
+  path: /api
+  response:
+    type: json
+  fields:
+    uploaded: {selector: uploaded}
+    downloaded: {selector: downloaded}
+    ratio: {selector: ratio}
+`
+
+// TestYAMLScraper_Multisolverr_RoutesThroughProxy verifies that a tracker with
+// UseMultisolverr set never dials the tracker directly: the stats request is
+// sent to the configured multisolverr instance's FlareSolverr-compatible /v1
+// endpoint, and the solved page it returns is parsed as if it came straight
+// from the tracker.
+func TestYAMLScraper_Multisolverr_RoutesThroughProxy(t *testing.T) {
+	solverr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v1", r.URL.Path)
+		var req struct {
+			Cmd string `json:"cmd"`
+			URL string `json:"url"`
+		}
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+		assert.Equal(t, "request.get", req.Cmd)
+		assert.Equal(t, "https://tracker.example.com/api", req.URL)
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"status": "ok",
+			"solution": map[string]any{
+				"status":   200,
+				"response": `{"uploaded":100,"downloaded":50,"ratio":2}`,
+			},
+		})
+	}))
+	defer solverr.Close()
+
+	multisolverr := mocks.NewMockMultisolverrConfigRepository(t)
+	multisolverr.EXPECT().Get().Return(&domain.MultisolverrConfig{
+		Enabled: true, BaseURL: solverr.URL, TimeoutSeconds: 5,
+	}, nil)
+
+	s := scraper.LoadFromYAMLWithMultisolverrForTest(t, multisolverrStatsYAML, multisolverr)
+
+	stats, err := s.Fetch(t.Context(), domain.Tracker{
+		Credentials:     `{"url":"https://tracker.example.com"}`,
+		UseMultisolverr: true,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, int64(100), stats.Uploaded)
+	assert.Equal(t, int64(50), stats.Downloaded)
+	assert.InDelta(t, 2.0, stats.Ratio, 0.001)
+}
+
+// TestYAMLScraper_Multisolverr_NotConfigured verifies that Fetch fails loudly
+// (rather than silently falling back to a direct request) when a tracker asks
+// for the multisolverr proxy but it isn't configured/enabled.
+func TestYAMLScraper_Multisolverr_NotConfigured(t *testing.T) {
+	t.Run("proxy disabled in settings", func(t *testing.T) {
+		multisolverr := mocks.NewMockMultisolverrConfigRepository(t)
+		multisolverr.EXPECT().Get().Return(&domain.MultisolverrConfig{Enabled: false}, nil)
+
+		s := scraper.LoadFromYAMLWithMultisolverrForTest(t, multisolverrStatsYAML, multisolverr)
+
+		_, err := s.Fetch(t.Context(), domain.Tracker{
+			Credentials:     `{"url":"https://tracker.example.com"}`,
+			UseMultisolverr: true,
+		})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not configured or enabled")
+	})
+
+	t.Run("no multisolverr repository wired", func(t *testing.T) {
+		s := scraper.LoadFromYAMLForTest(t, multisolverrStatsYAML)
+
+		_, err := s.Fetch(t.Context(), domain.Tracker{
+			Credentials:     `{"url":"https://tracker.example.com"}`,
+			UseMultisolverr: true,
+		})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not available")
+	})
 }

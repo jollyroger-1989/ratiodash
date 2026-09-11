@@ -44,31 +44,39 @@ type Tracker struct {
 	// SessionData holds a scraper-opaque JSON blob (session cookies, auth
 	// tokens/captures) saved after a successful login so future scrapes can
 	// skip re-authenticating. Never exposed via the API.
-	SessionData   string        `json:"-"                   gorm:"column:session_data;not null;default:''"`
-	CronExpr      string        `json:"cron_expr"           gorm:"not null;default:'@hourly'"`
-	Active        bool          `json:"active"              gorm:"not null;default:true"`
-	LastError     string        `json:"last_error"          gorm:"not null;default:''"`
-	LastScrapedAt *time.Time    `json:"last_scraped_at"     gorm:"default:null"`
-	CreatedAt     time.Time     `json:"created_at"`
-	UpdatedAt     time.Time     `json:"updated_at"`
-	Stats         *TrackerStats `json:"stats"               gorm:"-"`
+	SessionData string `json:"-"                   gorm:"column:session_data;not null;default:''"`
+	CronExpr    string `json:"cron_expr"           gorm:"not null;default:'@hourly'"`
+	Active      bool   `json:"active"              gorm:"not null;default:true"`
+	// UseMultisolverr routes this tracker's scraper requests through the
+	// configured multisolverr proxy (see domain.MultisolverrConfig) instead of
+	// dialing the tracker directly. Useful when the tracker sits behind a
+	// WAF/anti-bot challenge. Has no effect if no multisolverr proxy is
+	// configured and enabled in Settings.
+	UseMultisolverr bool          `json:"use_multisolverr"   gorm:"not null;default:false"`
+	LastError       string        `json:"last_error"          gorm:"not null;default:''"`
+	LastScrapedAt   *time.Time    `json:"last_scraped_at"     gorm:"default:null"`
+	CreatedAt       time.Time     `json:"created_at"`
+	UpdatedAt       time.Time     `json:"updated_at"`
+	Stats           *TrackerStats `json:"stats"               gorm:"-"`
 	// PublicCredentials contains non-sensitive credential fields (e.g. "url").
 	// It is computed at query time and never persisted.
 	PublicCredentials map[string]string `json:"public_credentials,omitempty" gorm:"-"`
 }
 
 type CreateTrackerInput struct {
-	Name        string `json:"name"`
-	ScraperKey  string `json:"scraper_key"`
-	Credentials string `json:"credentials"` // tracker-specific JSON blob
-	CronExpr    string `json:"cron_expr"`
+	Name            string `json:"name"`
+	ScraperKey      string `json:"scraper_key"`
+	Credentials     string `json:"credentials"` // tracker-specific JSON blob
+	CronExpr        string `json:"cron_expr"`
+	UseMultisolverr bool   `json:"use_multisolverr,omitempty"`
 }
 
 type UpdateTrackerInput struct {
-	Name        *string `json:"name,omitempty"`
-	Credentials *string `json:"credentials,omitempty"`
-	CronExpr    *string `json:"cron_expr,omitempty"`
-	Active      *bool   `json:"active,omitempty"`
+	Name            *string `json:"name,omitempty"`
+	Credentials     *string `json:"credentials,omitempty"`
+	CronExpr        *string `json:"cron_expr,omitempty"`
+	Active          *bool   `json:"active,omitempty"`
+	UseMultisolverr *bool   `json:"use_multisolverr,omitempty"`
 }
 
 // TrackerSortOptions specifies how the tracker list should be ordered.
