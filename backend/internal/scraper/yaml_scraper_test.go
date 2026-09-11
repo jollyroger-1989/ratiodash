@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -756,4 +757,109 @@ func TestYAMLScraper_Multisolverr_NotConfigured(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "not available")
 	})
+}
+
+// TestYAMLScraper_Multisolverr_FormLoginRedirectSuccess verifies that a
+// form-login flow routed through multisolverr detects a successful
+// redirect-based login even though multisolverr's headless-browser solver
+// follows the redirect itself and never surfaces a raw 3xx status. Without
+// reading solution.url off the solved response, doFormLogin has no way to
+// tell "the server sent us elsewhere" from "we're still looking at the login
+// page" and falls through to the page's login.error indicators — which, on
+// the page multisolverr actually lands on after a real redirect, can easily
+// contain leftover markup (nav chrome, a stale flash message, ...) that
+// coincidentally matches an error selector meant for the login page itself.
+func TestYAMLScraper_Multisolverr_FormLoginRedirectSuccess(t *testing.T) {
+	const loginFormYAML = `
+id: multisolverrlogintest
+settings:
+  - {name: username, type: text, label: Username, required: true}
+  - {name: password, type: password, label: Password, required: true}
+links:
+  - https://tracker.example.com
+login:
+  method: form
+  path: /login
+  inputs:
+    identifier: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+  selectorinputs:
+    csrf_token:
+      selector: "input[name=csrf_token]"
+      attribute: value
+  error:
+    - selector: "div.login-error"
+stats:
+  path: /stats
+  response:
+    type: json
+  fields:
+    uploaded: {selector: uploaded}
+    downloaded: {selector: downloaded}
+    ratio: {selector: ratio}
+`
+
+	solverr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Cmd string `json:"cmd"`
+			URL string `json:"url"`
+		}
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case req.Cmd == "request.get" && strings.HasSuffix(req.URL, "/login"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"status": "ok",
+				"solution": map[string]any{
+					"status":   200,
+					"url":      req.URL,
+					"response": `<html><body><form><input name="csrf_token" value="csrf123"/></form></body></html>`,
+				},
+			})
+		case req.Cmd == "request.post" && strings.HasSuffix(req.URL, "/login"):
+			// Simulate the browser having followed the post-login redirect to
+			// the dashboard on its own — a different URL than the one we
+			// posted to, and a page whose leftover chrome happens to contain
+			// a "div.login-error" node that has nothing to do with this
+			// login attempt.
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"status": "ok",
+				"solution": map[string]any{
+					"status":   200,
+					"url":      strings.TrimSuffix(req.URL, "/login") + "/dashboard",
+					"response": `<html><body><div class="login-error" style="display:none">Identifiants incorrects</div><p>Bienvenue</p></body></html>`,
+				},
+			})
+		case req.Cmd == "request.get" && strings.HasSuffix(req.URL, "/stats"):
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"status": "ok",
+				"solution": map[string]any{
+					"status":   200,
+					"url":      req.URL,
+					"response": `{"uploaded":100,"downloaded":50,"ratio":2}`,
+				},
+			})
+		default:
+			t.Fatalf("unexpected multisolverr request: cmd=%s url=%s", req.Cmd, req.URL)
+		}
+	}))
+	defer solverr.Close()
+
+	multisolverr := mocks.NewMockMultisolverrConfigRepository(t)
+	multisolverr.EXPECT().Get().Return(&domain.MultisolverrConfig{
+		Enabled: true, BaseURL: solverr.URL, TimeoutSeconds: 5,
+	}, nil)
+
+	s := scraper.LoadFromYAMLWithMultisolverrForTest(t, loginFormYAML, multisolverr)
+
+	stats, err := s.Fetch(t.Context(), domain.Tracker{
+		Credentials:     `{"username":"testuser","password":"testpass"}`,
+		UseMultisolverr: true,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, int64(100), stats.Uploaded)
+	assert.Equal(t, int64(50), stats.Downloaded)
+	assert.InDelta(t, 2.0, stats.Ratio, 0.001)
 }

@@ -342,6 +342,14 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
 		return nil
 	}
+	// The multisolverr transport follows redirects with its own headless
+	// browser and reports the final page's status (so the 3xx check above
+	// never fires for it), but it does tell us the URL it landed on. Treat
+	// landing anywhere other than submitURL as the same "redirected away"
+	// success signal a raw 3xx would have given us directly.
+	if resp.Request != nil && resp.Request.URL != nil && resp.Request.URL.String() != submitURL {
+		return nil
+	}
 	if resp.StatusCode >= 400 {
 		ys.logger().WithFields(logrus.Fields{
 			"url":    submitURL,
@@ -566,6 +574,13 @@ func (ys *YAMLScraper) doStats(ctx context.Context, client *http.Client, sitelin
 					rawValue = field.Default
 					err = nil
 				} else {
+					ys.logger().WithFields(logrus.Fields{
+						"field":         name,
+						"selector":      field.Selector,
+						"response_type": responseType,
+						"body_length":   len(body),
+						"body_preview":  previewBody(body, 800),
+					}).Warn("scraper_stats_field_extract_failed")
 					return nil, fmt.Errorf("field %q: %w", name, err)
 				}
 			}
@@ -623,6 +638,18 @@ func (ys *YAMLScraper) doClientRequest(client *http.Client, req *http.Request) (
 		"status": resp.StatusCode,
 	}).Infof("%s %s -> %d", req.Method, req.URL.String(), resp.StatusCode)
 	return resp, nil
+}
+
+// previewBody returns up to n bytes of body with whitespace collapsed, for
+// logging a compact snippet of a response that failed field extraction —
+// enough to tell a login/challenge/empty page apart from the expected markup
+// without dumping the whole (potentially large) response into the logs.
+func previewBody(body []byte, n int) string {
+	s := strings.Join(strings.Fields(string(body)), " ")
+	if len(s) > n {
+		return s[:n] + "…"
+	}
+	return s
 }
 
 func (ys *YAMLScraper) doGet(ctx context.Context, client *http.Client, rawURL string, headers map[string]string) ([]byte, error) {

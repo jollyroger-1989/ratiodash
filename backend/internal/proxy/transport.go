@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -18,7 +19,13 @@ import (
 // headers, etc.) are not delivered to the target site — anti-bot solving
 // impersonates a real browser rather than proxying arbitrary headers.
 // Likewise, the reported response status reflects multisolverr's solved page
-// and may not preserve a raw 3xx from a redirect-based login flow.
+// and may not preserve a raw 3xx from a redirect-based login flow: the
+// browser follows the redirect itself before multisolverr ever replies.
+// RoundTrip compensates for that by reporting the page multisolverr actually
+// landed on (solution.url) as resp.Request.URL, so callers that need to
+// detect "we were redirected away from the URL we posted to" (the usual way
+// a login flow signals success) can compare that against the URL they sent
+// instead of relying on a status code that will never arrive.
 type Transport struct {
 	client *Client
 }
@@ -59,6 +66,15 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		status = http.StatusOK
 	}
 
+	respReq := req
+	if sr.Solution.URL != "" {
+		if landedURL, err := url.Parse(sr.Solution.URL); err == nil {
+			clone := req.Clone(req.Context())
+			clone.URL = landedURL
+			respReq = clone
+		}
+	}
+
 	return &http.Response{
 		StatusCode: status,
 		Status:     fmt.Sprintf("%d %s", status, http.StatusText(status)),
@@ -67,6 +83,6 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		ProtoMinor: 1,
 		Header:     header,
 		Body:       io.NopCloser(strings.NewReader(sr.Solution.Response)),
-		Request:    req,
+		Request:    respReq,
 	}, nil
 }
