@@ -138,13 +138,17 @@ export const trackersApi = {
   },
 
   /** Test tracker credentials for a scraper before saving. */
-  test(scraperKey: string, credentials: string): Promise<void> {
-    return http.post('/trackers/test', { scraper_key: scraperKey, credentials }).then(() => undefined)
+  test(scraperKey: string, credentials: string, useMultisolverr?: boolean): Promise<void> {
+    return http
+      .post('/trackers/test', { scraper_key: scraperKey, credentials, use_multisolverr: useMultisolverr })
+      .then(() => undefined)
   },
 
   /** Test a saved tracker by ID, optionally merging current form values over stored credentials. */
-  testByID(id: number, credentialsOverride?: string): Promise<void> {
-    return http.post(`/trackers/${id}/test`, { credentials: credentialsOverride ?? '' }).then(() => undefined)
+  testByID(id: number, credentialsOverride?: string, useMultisolverr?: boolean): Promise<void> {
+    return http
+      .post(`/trackers/${id}/test`, { credentials: credentialsOverride ?? '', use_multisolverr: useMultisolverr })
+      .then(() => undefined)
   }
 }
 

@@ -199,9 +199,9 @@ async function runTest() {
   testError.value = ''
   try {
     if (editMode.value && props.tracker) {
-      await trackersApi.testByID(props.tracker.id, buildCredentialsJson())
+      await trackersApi.testByID(props.tracker.id, buildCredentialsJson(), form.value.use_multisolverr)
     } else {
-      await trackersApi.test(form.value.scraper_key, buildCredentialsJson() || '{}')
+      await trackersApi.test(form.value.scraper_key, buildCredentialsJson() || '{}', form.value.use_multisolverr)
     }
     testStatus.value = 'ok'
   } catch (e: any) {

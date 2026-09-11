@@ -148,7 +148,7 @@ func (s *trackerService) Delete(id uint) error {
 	return s.repo.Delete(id)
 }
 
-func (s *trackerService) Test(scraperKey, credentialsJSON string) error {
+func (s *trackerService) Test(scraperKey, credentialsJSON string, useMultisolverr bool) error {
 	sc, ok := s.registry.Get(scraperKey)
 	if !ok {
 		return fmt.Errorf("unknown scraper key %q", scraperKey)
@@ -159,13 +159,14 @@ func (s *trackerService) Test(scraperKey, credentialsJSON string) error {
 	}
 	ctx := domain.WithSessionPersistDisabled(context.Background())
 	_, err := sc.Fetch(ctx, domain.Tracker{
-		ScraperKey:  scraperKey,
-		Credentials: creds,
+		ScraperKey:      scraperKey,
+		Credentials:     creds,
+		UseMultisolverr: useMultisolverr,
 	})
 	return err
 }
 
-func (s *trackerService) TestByID(id uint, credentialsOverride string) error {
+func (s *trackerService) TestByID(id uint, credentialsOverride string, useMultisolverrOverride *bool) error {
 	tracker, err := s.repo.FindByID(id)
 	if err != nil {
 		return err
@@ -189,6 +190,9 @@ func (s *trackerService) TestByID(id uint, credentialsOverride string) error {
 
 	testTracker := *tracker
 	testTracker.Credentials = effective
+	if useMultisolverrOverride != nil {
+		testTracker.UseMultisolverr = *useMultisolverrOverride
+	}
 	// A test must validate the (possibly overridden) credentials against a
 	// fresh login rather than silently reusing a cached session, and must not
 	// persist whatever session that fresh login produces.

@@ -337,7 +337,7 @@ func TestTrackerService_Test(t *testing.T) {
 		registry.EXPECT().Get("generic").Return(scraper, true)
 
 		err := service.NewTrackerService(mocks.NewMockTrackerRepository(t), registry).
-			Test("generic", `{"cookie":"abc"}`)
+			Test("generic", `{"cookie":"abc"}`, false)
 
 		assert.NoError(t, err)
 	})
@@ -351,7 +351,21 @@ func TestTrackerService_Test(t *testing.T) {
 		registry.EXPECT().Get("generic").Return(scraper, true)
 
 		err := service.NewTrackerService(mocks.NewMockTrackerRepository(t), registry).
-			Test("generic", "")
+			Test("generic", "", false)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("passes useMultisolverr through to the scraper", func(t *testing.T) {
+		scraper := mocks.NewMockTrackerScraper(t)
+		scraper.EXPECT().Fetch(mock.Anything, mock.MatchedBy(func(tr domain.Tracker) bool {
+			return tr.UseMultisolverr
+		})).Return(&domain.TrackerStats{}, nil)
+		registry := mocks.NewMockScraperRegistry(t)
+		registry.EXPECT().Get("generic").Return(scraper, true)
+
+		err := service.NewTrackerService(mocks.NewMockTrackerRepository(t), registry).
+			Test("generic", "{}", true)
 
 		assert.NoError(t, err)
 	})
@@ -361,7 +375,7 @@ func TestTrackerService_Test(t *testing.T) {
 		registry.EXPECT().Get("unknown").Return(nil, false)
 
 		err := service.NewTrackerService(mocks.NewMockTrackerRepository(t), registry).
-			Test("unknown", "{}")
+			Test("unknown", "{}", false)
 
 		assert.ErrorContains(t, err, "unknown scraper key")
 	})
@@ -373,7 +387,7 @@ func TestTrackerService_Test(t *testing.T) {
 		registry.EXPECT().Get("generic").Return(scraper, true)
 
 		err := service.NewTrackerService(mocks.NewMockTrackerRepository(t), registry).
-			Test("generic", "{}")
+			Test("generic", "{}", false)
 
 		assert.ErrorContains(t, err, "401 Unauthorized")
 	})
@@ -392,7 +406,42 @@ func TestTrackerService_TestByID(t *testing.T) {
 			ID: 1, ScraperKey: "generic", Credentials: `{"cookie":"abc"}`,
 		}, nil)
 
-		err := service.NewTrackerService(repo, registry).TestByID(1, "")
+		err := service.NewTrackerService(repo, registry).TestByID(1, "", nil)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("overrides the stored multisolverr flag for this dry run", func(t *testing.T) {
+		scraper := mocks.NewMockTrackerScraper(t)
+		scraper.EXPECT().Fetch(mock.Anything, mock.MatchedBy(func(tr domain.Tracker) bool {
+			return tr.UseMultisolverr
+		})).Return(&domain.TrackerStats{}, nil)
+		registry := mocks.NewMockScraperRegistry(t)
+		registry.EXPECT().Get("generic").Return(scraper, true)
+		repo := mocks.NewMockTrackerRepository(t)
+		repo.EXPECT().FindByID(uint(1)).Return(&domain.Tracker{
+			ID: 1, ScraperKey: "generic", Credentials: `{"cookie":"abc"}`, UseMultisolverr: false,
+		}, nil)
+
+		useMultisolverr := true
+		err := service.NewTrackerService(repo, registry).TestByID(1, "", &useMultisolverr)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("keeps the stored multisolverr flag when no override is given", func(t *testing.T) {
+		scraper := mocks.NewMockTrackerScraper(t)
+		scraper.EXPECT().Fetch(mock.Anything, mock.MatchedBy(func(tr domain.Tracker) bool {
+			return tr.UseMultisolverr
+		})).Return(&domain.TrackerStats{}, nil)
+		registry := mocks.NewMockScraperRegistry(t)
+		registry.EXPECT().Get("generic").Return(scraper, true)
+		repo := mocks.NewMockTrackerRepository(t)
+		repo.EXPECT().FindByID(uint(1)).Return(&domain.Tracker{
+			ID: 1, ScraperKey: "generic", Credentials: `{"cookie":"abc"}`, UseMultisolverr: true,
+		}, nil)
+
+		err := service.NewTrackerService(repo, registry).TestByID(1, "", nil)
 
 		assert.NoError(t, err)
 	})
@@ -412,7 +461,7 @@ func TestTrackerService_TestByID(t *testing.T) {
 			Credentials: `{"cookie":"stored","username":"user"}`,
 		}, nil)
 
-		err := service.NewTrackerService(repo, registry).TestByID(1, `{"cookie":"new-cookie"}`)
+		err := service.NewTrackerService(repo, registry).TestByID(1, `{"cookie":"new-cookie"}`, nil)
 
 		assert.NoError(t, err)
 	})
@@ -421,7 +470,7 @@ func TestTrackerService_TestByID(t *testing.T) {
 		repo := mocks.NewMockTrackerRepository(t)
 		repo.EXPECT().FindByID(uint(999)).Return(nil, nil)
 
-		err := service.NewTrackerService(repo, mocks.NewMockScraperRegistry(t)).TestByID(999, "")
+		err := service.NewTrackerService(repo, mocks.NewMockScraperRegistry(t)).TestByID(999, "", nil)
 
 		assert.ErrorContains(t, err, "not found")
 	})
@@ -434,7 +483,7 @@ func TestTrackerService_TestByID(t *testing.T) {
 			ID: 1, ScraperKey: "unknown", Credentials: "{}",
 		}, nil)
 
-		err := service.NewTrackerService(repo, registry).TestByID(1, "")
+		err := service.NewTrackerService(repo, registry).TestByID(1, "", nil)
 
 		assert.ErrorContains(t, err, "unknown scraper key")
 	})
@@ -449,7 +498,7 @@ func TestTrackerService_TestByID(t *testing.T) {
 			ID: 1, ScraperKey: "generic", Credentials: `{"cookie":"abc"}`,
 		}, nil)
 
-		err := service.NewTrackerService(repo, registry).TestByID(1, "")
+		err := service.NewTrackerService(repo, registry).TestByID(1, "", nil)
 
 		assert.ErrorContains(t, err, "scrape failed")
 	})

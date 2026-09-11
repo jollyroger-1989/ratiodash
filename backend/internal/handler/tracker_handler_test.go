@@ -366,7 +366,7 @@ func setupTrackerHandlerWithMock(t *testing.T) trackerTestEnvWithMock {
 func TestTrackerHandler_Test(t *testing.T) {
 	t.Run("returns 204 on success", func(t *testing.T) {
 		env := setupTrackerHandlerWithMock(t)
-		env.service.EXPECT().Test("generic", `{"cookie":"abc"}`).Return(nil)
+		env.service.EXPECT().Test("generic", `{"cookie":"abc"}`, false).Return(nil)
 
 		resp := env.api.Do(http.MethodPost, "/api/v1/trackers/test",
 			map[string]string{"scraper_key": "generic", "credentials": `{"cookie":"abc"}`})
@@ -374,9 +374,19 @@ func TestTrackerHandler_Test(t *testing.T) {
 		assert.Equal(t, http.StatusNoContent, resp.Code)
 	})
 
+	t.Run("passes use_multisolverr through", func(t *testing.T) {
+		env := setupTrackerHandlerWithMock(t)
+		env.service.EXPECT().Test("generic", "{}", true).Return(nil)
+
+		resp := env.api.Do(http.MethodPost, "/api/v1/trackers/test",
+			map[string]any{"scraper_key": "generic", "credentials": "{}", "use_multisolverr": true})
+
+		assert.Equal(t, http.StatusNoContent, resp.Code)
+	})
+
 	t.Run("returns 422 when scraper fails", func(t *testing.T) {
 		env := setupTrackerHandlerWithMock(t)
-		env.service.EXPECT().Test("generic", mock.Anything).
+		env.service.EXPECT().Test("generic", mock.Anything, mock.Anything).
 			Return(errors.New("401 Unauthorized"))
 
 		resp := env.api.Do(http.MethodPost, "/api/v1/trackers/test",
@@ -387,7 +397,7 @@ func TestTrackerHandler_Test(t *testing.T) {
 
 	t.Run("returns 422 for unknown scraper key", func(t *testing.T) {
 		env := setupTrackerHandlerWithMock(t)
-		env.service.EXPECT().Test("unknown", mock.Anything).
+		env.service.EXPECT().Test("unknown", mock.Anything, mock.Anything).
 			Return(errors.New(`unknown scraper key "unknown"`))
 
 		resp := env.api.Do(http.MethodPost, "/api/v1/trackers/test",
@@ -400,7 +410,7 @@ func TestTrackerHandler_Test(t *testing.T) {
 func TestTrackerHandler_TestByID(t *testing.T) {
 	t.Run("returns 204 on success", func(t *testing.T) {
 		env := setupTrackerHandlerWithMock(t)
-		env.service.EXPECT().TestByID(uint(1), `{"cookie":"new"}`).Return(nil)
+		env.service.EXPECT().TestByID(uint(1), `{"cookie":"new"}`, (*bool)(nil)).Return(nil)
 
 		resp := env.api.Do(http.MethodPost, "/api/v1/trackers/1/test",
 			map[string]string{"credentials": `{"cookie":"new"}`})
@@ -408,9 +418,21 @@ func TestTrackerHandler_TestByID(t *testing.T) {
 		assert.Equal(t, http.StatusNoContent, resp.Code)
 	})
 
+	t.Run("passes use_multisolverr override through", func(t *testing.T) {
+		env := setupTrackerHandlerWithMock(t)
+		env.service.EXPECT().TestByID(uint(1), "{}", mock.MatchedBy(func(v *bool) bool {
+			return v != nil && *v
+		})).Return(nil)
+
+		resp := env.api.Do(http.MethodPost, "/api/v1/trackers/1/test",
+			map[string]any{"credentials": "{}", "use_multisolverr": true})
+
+		assert.Equal(t, http.StatusNoContent, resp.Code)
+	})
+
 	t.Run("returns 422 when scraper fails", func(t *testing.T) {
 		env := setupTrackerHandlerWithMock(t)
-		env.service.EXPECT().TestByID(uint(1), mock.Anything).
+		env.service.EXPECT().TestByID(uint(1), mock.Anything, mock.Anything).
 			Return(errors.New("scrape failed"))
 
 		resp := env.api.Do(http.MethodPost, "/api/v1/trackers/1/test",
@@ -421,7 +443,7 @@ func TestTrackerHandler_TestByID(t *testing.T) {
 
 	t.Run("returns 422 when tracker not found", func(t *testing.T) {
 		env := setupTrackerHandlerWithMock(t)
-		env.service.EXPECT().TestByID(uint(999), "").
+		env.service.EXPECT().TestByID(uint(999), "", (*bool)(nil)).
 			Return(errors.New("tracker 999 not found"))
 
 		resp := env.api.Do(http.MethodPost, "/api/v1/trackers/999/test",

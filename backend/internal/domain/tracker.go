@@ -109,9 +109,15 @@ type TrackerService interface {
 	Create(input CreateTrackerInput) (*Tracker, error)
 	Update(id uint, input UpdateTrackerInput) (*Tracker, error)
 	Delete(id uint) error
-	// Test fetches stats using scraperKey and credentialsJSON without persisting anything.
-	Test(scraperKey, credentialsJSON string) error
+	// Test fetches stats using scraperKey and credentialsJSON without persisting
+	// anything. useMultisolverr routes the dry run through the configured
+	// multisolverr proxy, mirroring what would happen if the tracker were
+	// saved with that flag set.
+	Test(scraperKey, credentialsJSON string, useMultisolverr bool) error
 	// TestByID loads the stored tracker, merges credentialsOverride, and fetches
 	// without persisting. Pass an empty string to test with the stored credentials as-is.
-	TestByID(id uint, credentialsOverride string) error
+	// useMultisolverrOverride, when non-nil, overrides the tracker's stored
+	// UseMultisolverr flag for this dry run so an unsaved toggle in the edit
+	// form can be tested before saving.
+	TestByID(id uint, credentialsOverride string, useMultisolverrOverride *bool) error
 }

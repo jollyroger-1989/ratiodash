@@ -66,15 +66,17 @@ type RefreshTrackerInput struct {
 
 type TestTrackerInput struct {
 	Body struct {
-		ScraperKey  string `json:"scraper_key"  required:"true" minLength:"1" doc:"Scraper backend key"`
-		Credentials string `json:"credentials,omitempty"  doc:"JSON credentials blob to test"`
+		ScraperKey      string `json:"scraper_key"  required:"true" minLength:"1" doc:"Scraper backend key"`
+		Credentials     string `json:"credentials,omitempty"  doc:"JSON credentials blob to test"`
+		UseMultisolverr bool   `json:"use_multisolverr,omitempty" doc:"Route the dry run through the configured multisolverr proxy"`
 	}
 }
 
 type TestTrackerByIDInput struct {
 	ID   uint `path:"id"`
 	Body struct {
-		Credentials string `json:"credentials,omitempty" doc:"Partial credentials override; non-empty keys win over stored values"`
+		Credentials     string `json:"credentials,omitempty" doc:"Partial credentials override; non-empty keys win over stored values"`
+		UseMultisolverr *bool  `json:"use_multisolverr,omitempty" doc:"Override the tracker's stored multisolverr flag for this dry run"`
 	}
 }
 
@@ -175,14 +177,14 @@ func (h *TrackerHandler) RefreshTracker(ctx context.Context, input *RefreshTrack
 }
 
 func (h *TrackerHandler) TestTracker(ctx context.Context, input *TestTrackerInput) (*struct{}, error) {
-	if err := h.service.Test(input.Body.ScraperKey, input.Body.Credentials); err != nil {
+	if err := h.service.Test(input.Body.ScraperKey, input.Body.Credentials, input.Body.UseMultisolverr); err != nil {
 		return nil, huma.Error422UnprocessableEntity(err.Error())
 	}
 	return nil, nil
 }
 
 func (h *TrackerHandler) TestTrackerByID(ctx context.Context, input *TestTrackerByIDInput) (*struct{}, error) {
-	if err := h.service.TestByID(input.ID, input.Body.Credentials); err != nil {
+	if err := h.service.TestByID(input.ID, input.Body.Credentials, input.Body.UseMultisolverr); err != nil {
 		return nil, huma.Error422UnprocessableEntity(err.Error())
 	}
 	return nil, nil

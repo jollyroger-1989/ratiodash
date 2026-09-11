@@ -297,17 +297,17 @@ func (_c *MockTrackerService_GetByID_Call) RunAndReturn(run func(uint) (*domain.
 	return _c
 }
 
-// Test provides a mock function with given fields: scraperKey, credentialsJSON
-func (_m *MockTrackerService) Test(scraperKey string, credentialsJSON string) error {
-	ret := _m.Called(scraperKey, credentialsJSON)
+// Test provides a mock function with given fields: scraperKey, credentialsJSON, useMultisolverr
+func (_m *MockTrackerService) Test(scraperKey string, credentialsJSON string, useMultisolverr bool) error {
+	ret := _m.Called(scraperKey, credentialsJSON, useMultisolverr)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Test")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(scraperKey, credentialsJSON)
+	if rf, ok := ret.Get(0).(func(string, string, bool) error); ok {
+		r0 = rf(scraperKey, credentialsJSON, useMultisolverr)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -323,13 +323,14 @@ type MockTrackerService_Test_Call struct {
 // Test is a helper method to define mock.On call
 //   - scraperKey string
 //   - credentialsJSON string
-func (_e *MockTrackerService_Expecter) Test(scraperKey interface{}, credentialsJSON interface{}) *MockTrackerService_Test_Call {
-	return &MockTrackerService_Test_Call{Call: _e.mock.On("Test", scraperKey, credentialsJSON)}
+//   - useMultisolverr bool
+func (_e *MockTrackerService_Expecter) Test(scraperKey interface{}, credentialsJSON interface{}, useMultisolverr interface{}) *MockTrackerService_Test_Call {
+	return &MockTrackerService_Test_Call{Call: _e.mock.On("Test", scraperKey, credentialsJSON, useMultisolverr)}
 }
 
-func (_c *MockTrackerService_Test_Call) Run(run func(scraperKey string, credentialsJSON string)) *MockTrackerService_Test_Call {
+func (_c *MockTrackerService_Test_Call) Run(run func(scraperKey string, credentialsJSON string, useMultisolverr bool)) *MockTrackerService_Test_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(string))
+		run(args[0].(string), args[1].(string), args[2].(bool))
 	})
 	return _c
 }
@@ -339,22 +340,22 @@ func (_c *MockTrackerService_Test_Call) Return(_a0 error) *MockTrackerService_Te
 	return _c
 }
 
-func (_c *MockTrackerService_Test_Call) RunAndReturn(run func(string, string) error) *MockTrackerService_Test_Call {
+func (_c *MockTrackerService_Test_Call) RunAndReturn(run func(string, string, bool) error) *MockTrackerService_Test_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// TestByID provides a mock function with given fields: id, credentialsOverride
-func (_m *MockTrackerService) TestByID(id uint, credentialsOverride string) error {
-	ret := _m.Called(id, credentialsOverride)
+// TestByID provides a mock function with given fields: id, credentialsOverride, useMultisolverrOverride
+func (_m *MockTrackerService) TestByID(id uint, credentialsOverride string, useMultisolverrOverride *bool) error {
+	ret := _m.Called(id, credentialsOverride, useMultisolverrOverride)
 
 	if len(ret) == 0 {
 		panic("no return value specified for TestByID")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(uint, string) error); ok {
-		r0 = rf(id, credentialsOverride)
+	if rf, ok := ret.Get(0).(func(uint, string, *bool) error); ok {
+		r0 = rf(id, credentialsOverride, useMultisolverrOverride)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -370,13 +371,14 @@ type MockTrackerService_TestByID_Call struct {
 // TestByID is a helper method to define mock.On call
 //   - id uint
 //   - credentialsOverride string
-func (_e *MockTrackerService_Expecter) TestByID(id interface{}, credentialsOverride interface{}) *MockTrackerService_TestByID_Call {
-	return &MockTrackerService_TestByID_Call{Call: _e.mock.On("TestByID", id, credentialsOverride)}
+//   - useMultisolverrOverride *bool
+func (_e *MockTrackerService_Expecter) TestByID(id interface{}, credentialsOverride interface{}, useMultisolverrOverride interface{}) *MockTrackerService_TestByID_Call {
+	return &MockTrackerService_TestByID_Call{Call: _e.mock.On("TestByID", id, credentialsOverride, useMultisolverrOverride)}
 }
 
-func (_c *MockTrackerService_TestByID_Call) Run(run func(id uint, credentialsOverride string)) *MockTrackerService_TestByID_Call {
+func (_c *MockTrackerService_TestByID_Call) Run(run func(id uint, credentialsOverride string, useMultisolverrOverride *bool)) *MockTrackerService_TestByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(uint), args[1].(string))
+		run(args[0].(uint), args[1].(string), args[2].(*bool))
 	})
 	return _c
 }
@@ -386,7 +388,7 @@ func (_c *MockTrackerService_TestByID_Call) Return(_a0 error) *MockTrackerServic
 	return _c
 }
 
-func (_c *MockTrackerService_TestByID_Call) RunAndReturn(run func(uint, string) error) *MockTrackerService_TestByID_Call {
+func (_c *MockTrackerService_TestByID_Call) RunAndReturn(run func(uint, string, *bool) error) *MockTrackerService_TestByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
