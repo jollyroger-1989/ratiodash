@@ -343,6 +343,16 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 	}
 	defer resp.Body.Close()
 
+	landedURL := submitURL
+	if resp.Request != nil && resp.Request.URL != nil {
+		landedURL = resp.Request.URL.String()
+	}
+	ys.logger().WithFields(logrus.Fields{
+		"submit_url": submitURL,
+		"landed_url": landedURL,
+		"status":     resp.StatusCode,
+	}).Info("scraper_login_response")
+
 	// A redirect means login succeeded — the server is directing us elsewhere.
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
 		return nil
@@ -352,7 +362,7 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 	// never fires for it), but it does tell us the URL it landed on. Treat
 	// landing anywhere other than submitURL as the same "redirected away"
 	// success signal a raw 3xx would have given us directly.
-	if resp.Request != nil && resp.Request.URL != nil && resp.Request.URL.String() != submitURL {
+	if landedURL != submitURL {
 		return nil
 	}
 	if resp.StatusCode >= 400 {
@@ -374,6 +384,18 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 			"status": resp.StatusCode,
 		}).Warn("scraper_login_validation_failed")
 		return err
+	}
+	if len(login.Error) == 0 {
+		// We never saw a redirect (raw 3xx or, via multisolverr, a landed URL
+		// different from submitURL) and this definition has no login.error
+		// indicators to check the response against, so there is no signal
+		// left to tell a real login success apart from a silent failure that
+		// just re-rendered the same page. Flag that loudly instead of
+		// reporting success on faith.
+		ys.logger().WithFields(logrus.Fields{
+			"url":    submitURL,
+			"status": resp.StatusCode,
+		}).Warn("scraper_login_unverified")
 	}
 
 	return nil
