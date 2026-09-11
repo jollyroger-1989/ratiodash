@@ -130,11 +130,6 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 		}
 	}
 
-	ys.logger().WithFields(logrus.Fields{
-		"cookies": cookieNames(jar, siteURL),
-		"reused":  reused,
-	}).Info("scraper_stats_request_cookies")
-
 	stats, err := ys.doStats(ctx, client, sitelink, tctx)
 	if err != nil && reused {
 		// The reused session may have expired: force a fresh login and retry once.
@@ -343,16 +338,6 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 	}
 	defer resp.Body.Close()
 
-	landedURL := submitURL
-	if resp.Request != nil && resp.Request.URL != nil {
-		landedURL = resp.Request.URL.String()
-	}
-	ys.logger().WithFields(logrus.Fields{
-		"submit_url": submitURL,
-		"landed_url": landedURL,
-		"status":     resp.StatusCode,
-	}).Info("scraper_login_response")
-
 	// A redirect means login succeeded — the server is directing us elsewhere.
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
 		return nil
@@ -362,7 +347,7 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 	// never fires for it), but it does tell us the URL it landed on. Treat
 	// landing anywhere other than submitURL as the same "redirected away"
 	// success signal a raw 3xx would have given us directly.
-	if landedURL != submitURL {
+	if resp.Request != nil && resp.Request.URL != nil && resp.Request.URL.String() != submitURL {
 		return nil
 	}
 	if resp.StatusCode >= 400 {
@@ -384,30 +369,6 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 			"status": resp.StatusCode,
 		}).Warn("scraper_login_validation_failed")
 		return err
-	}
-	if len(login.Error) == 0 {
-		// We never saw a redirect (raw 3xx or, via multisolverr, a landed URL
-		// different from submitURL) and this definition has no login.error
-		// indicators to check the response against, so there is no signal
-		// left to tell a real login success apart from a silent failure that
-		// just re-rendered the same page. Flag that loudly instead of
-		// reporting success on faith. A plain head-of-document preview can
-		// miss the actual error banner on pages with a lot of markup before
-		// the login form itself, so also scan for common failure wording and
-		// preview around the first hit.
-		preview := previewBody(respBody, 1500)
-		hint, hintPreview := findLoginFailureHint(respBody)
-		fields := logrus.Fields{
-			"url":          submitURL,
-			"status":       resp.StatusCode,
-			"body_length":  len(respBody),
-			"body_preview": preview,
-		}
-		if hint != "" {
-			fields["error_hint"] = hint
-			fields["error_hint_preview"] = hintPreview
-		}
-		ys.logger().WithFields(fields).Warn("scraper_login_unverified")
 	}
 
 	return nil
@@ -677,57 +638,6 @@ func (ys *YAMLScraper) doClientRequest(client *http.Client, req *http.Request) (
 		"status": resp.StatusCode,
 	}).Infof("%s %s -> %d", req.Method, req.URL.String(), resp.StatusCode)
 	return resp, nil
-}
-
-// cookieNames returns the names (never values — these can be session
-// secrets) of the cookies the jar currently holds for siteURL, for logging
-// what a stats/login request is actually authenticated with.
-func cookieNames(jar *cookiejar.Jar, siteURL *url.URL) []string {
-	cookies := jar.Cookies(siteURL)
-	names := make([]string, 0, len(cookies))
-	for _, c := range cookies {
-		names = append(names, c.Name)
-	}
-	return names
-}
-
-// loginFailureHints are substrings (matched case-insensitively) commonly
-// used by login forms — in French or English — to report a rejected
-// attempt. Used only to locate a useful excerpt to log when a login can't
-// otherwise be verified; not exhaustive and not used to decide success.
-var loginFailureHints = []string{
-	"incorrect", "incorrects", "invalide", "invalides", "erreur",
-	"échec", "echec", "identifiants", "mot de passe incorrect",
-	"csrf", "captcha", "banni", "suspendu", "bloqué", "bloque",
-	"invalid", "failed", "denied", "wrong password",
-}
-
-// findLoginFailureHint scans body (case-insensitively) for the first of
-// loginFailureHints it contains and returns that hint plus ~300 collapsed
-// characters of surrounding context — a head-of-document preview can miss
-// an error banner buried deep in a page's markup. Returns "", "" if none of
-// the hints appear.
-func findLoginFailureHint(body []byte) (hint, context string) {
-	lower := strings.ToLower(string(body))
-	bestIdx := -1
-	for _, h := range loginFailureHints {
-		if idx := strings.Index(lower, h); idx != -1 && (bestIdx == -1 || idx < bestIdx) {
-			bestIdx = idx
-			hint = h
-		}
-	}
-	if bestIdx == -1 {
-		return "", ""
-	}
-	start := bestIdx - 150
-	if start < 0 {
-		start = 0
-	}
-	end := bestIdx + 150
-	if end > len(body) {
-		end = len(body)
-	}
-	return hint, previewBody(body[start:end], 400)
 }
 
 // previewBody returns up to n bytes of body with whitespace collapsed, for
