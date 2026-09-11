@@ -391,13 +391,23 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 		// indicators to check the response against, so there is no signal
 		// left to tell a real login success apart from a silent failure that
 		// just re-rendered the same page. Flag that loudly instead of
-		// reporting success on faith.
-		ys.logger().WithFields(logrus.Fields{
+		// reporting success on faith. A plain head-of-document preview can
+		// miss the actual error banner on pages with a lot of markup before
+		// the login form itself, so also scan for common failure wording and
+		// preview around the first hit.
+		preview := previewBody(respBody, 1500)
+		hint, hintPreview := findLoginFailureHint(respBody)
+		fields := logrus.Fields{
 			"url":          submitURL,
 			"status":       resp.StatusCode,
 			"body_length":  len(respBody),
-			"body_preview": previewBody(respBody, 1500),
-		}).Warn("scraper_login_unverified")
+			"body_preview": preview,
+		}
+		if hint != "" {
+			fields["error_hint"] = hint
+			fields["error_hint_preview"] = hintPreview
+		}
+		ys.logger().WithFields(fields).Warn("scraper_login_unverified")
 	}
 
 	return nil
@@ -679,6 +689,45 @@ func cookieNames(jar *cookiejar.Jar, siteURL *url.URL) []string {
 		names = append(names, c.Name)
 	}
 	return names
+}
+
+// loginFailureHints are substrings (matched case-insensitively) commonly
+// used by login forms — in French or English — to report a rejected
+// attempt. Used only to locate a useful excerpt to log when a login can't
+// otherwise be verified; not exhaustive and not used to decide success.
+var loginFailureHints = []string{
+	"incorrect", "incorrects", "invalide", "invalides", "erreur",
+	"échec", "echec", "identifiants", "mot de passe incorrect",
+	"csrf", "captcha", "banni", "suspendu", "bloqué", "bloque",
+	"invalid", "failed", "denied", "wrong password",
+}
+
+// findLoginFailureHint scans body (case-insensitively) for the first of
+// loginFailureHints it contains and returns that hint plus ~300 collapsed
+// characters of surrounding context — a head-of-document preview can miss
+// an error banner buried deep in a page's markup. Returns "", "" if none of
+// the hints appear.
+func findLoginFailureHint(body []byte) (hint, context string) {
+	lower := strings.ToLower(string(body))
+	bestIdx := -1
+	for _, h := range loginFailureHints {
+		if idx := strings.Index(lower, h); idx != -1 && (bestIdx == -1 || idx < bestIdx) {
+			bestIdx = idx
+			hint = h
+		}
+	}
+	if bestIdx == -1 {
+		return "", ""
+	}
+	start := bestIdx - 150
+	if start < 0 {
+		start = 0
+	}
+	end := bestIdx + 150
+	if end > len(body) {
+		end = len(body)
+	}
+	return hint, previewBody(body[start:end], 400)
 }
 
 // previewBody returns up to n bytes of body with whitespace collapsed, for
