@@ -393,8 +393,10 @@ func (ys *YAMLScraper) doFormLogin(ctx context.Context, client *http.Client, sit
 		// just re-rendered the same page. Flag that loudly instead of
 		// reporting success on faith.
 		ys.logger().WithFields(logrus.Fields{
-			"url":    submitURL,
-			"status": resp.StatusCode,
+			"url":          submitURL,
+			"status":       resp.StatusCode,
+			"body_length":  len(respBody),
+			"body_preview": previewBody(respBody, 1500),
 		}).Warn("scraper_login_unverified")
 	}
 
