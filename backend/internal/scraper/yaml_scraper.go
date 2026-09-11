@@ -130,6 +130,11 @@ func (ys *YAMLScraper) Fetch(ctx context.Context, tracker domain.Tracker) (*doma
 		}
 	}
 
+	ys.logger().WithFields(logrus.Fields{
+		"cookies": cookieNames(jar, siteURL),
+		"reused":  reused,
+	}).Info("scraper_stats_request_cookies")
+
 	stats, err := ys.doStats(ctx, client, sitelink, tctx)
 	if err != nil && reused {
 		// The reused session may have expired: force a fresh login and retry once.
@@ -638,6 +643,18 @@ func (ys *YAMLScraper) doClientRequest(client *http.Client, req *http.Request) (
 		"status": resp.StatusCode,
 	}).Infof("%s %s -> %d", req.Method, req.URL.String(), resp.StatusCode)
 	return resp, nil
+}
+
+// cookieNames returns the names (never values — these can be session
+// secrets) of the cookies the jar currently holds for siteURL, for logging
+// what a stats/login request is actually authenticated with.
+func cookieNames(jar *cookiejar.Jar, siteURL *url.URL) []string {
+	cookies := jar.Cookies(siteURL)
+	names := make([]string, 0, len(cookies))
+	for _, c := range cookies {
+		names = append(names, c.Name)
+	}
+	return names
 }
 
 // previewBody returns up to n bytes of body with whitespace collapsed, for
