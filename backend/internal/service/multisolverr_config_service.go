@@ -19,12 +19,7 @@ func NewMultisolverrConfigService(repo domain.MultisolverrConfigRepository) doma
 }
 
 func (s *multisolverrConfigService) Get() (*domain.MultisolverrConfig, error) {
-	cfg, err := s.repo.Get()
-	if err != nil {
-		return nil, err
-	}
-	cfg.HasAPIKey = cfg.APIKey != ""
-	return cfg, nil
+	return s.repo.Get()
 }
 
 func (s *multisolverrConfigService) Update(input domain.UpdateMultisolverrConfigInput) (*domain.MultisolverrConfig, error) {
@@ -42,9 +37,6 @@ func (s *multisolverrConfigService) Update(input domain.UpdateMultisolverrConfig
 		}
 		cfg.BaseURL = trimmed
 	}
-	if input.APIKey != nil {
-		cfg.APIKey = *input.APIKey
-	}
 	if input.TimeoutSeconds != nil {
 		if *input.TimeoutSeconds <= 0 {
 			return nil, fmt.Errorf("timeout_seconds must be positive")
@@ -61,7 +53,6 @@ func (s *multisolverrConfigService) Update(input domain.UpdateMultisolverrConfig
 	if err := s.repo.Update(cfg); err != nil {
 		return nil, err
 	}
-	cfg.HasAPIKey = cfg.APIKey != ""
 	return cfg, nil
 }
 

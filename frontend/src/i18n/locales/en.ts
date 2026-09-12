@@ -167,7 +167,6 @@ export default {
       enabled: 'Enabled',
       baseUrl: 'Base URL',
       timeout: 'Timeout (seconds)',
-      apiKey: 'API key',
       save: 'Save Changes',
       saving: 'Saving…',
       saved: 'Multisolverr settings saved.',

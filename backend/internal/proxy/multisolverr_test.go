@@ -59,22 +59,6 @@ func TestClient_Solve(t *testing.T) {
 		assert.Equal(t, 200, sr.Solution.Status)
 	})
 
-	t.Run("sends an X-Api-Key header when configured", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "secret", r.Header.Get("X-Api-Key"))
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"status":   "ok",
-				"solution": map[string]any{"status": 200, "response": ""},
-			})
-		}))
-		defer srv.Close()
-
-		client := proxy.NewClient(proxy.Config{BaseURL: srv.URL, APIKey: "secret", Timeout: 5 * time.Second})
-		_, err := client.Solve(context.Background(), http.MethodGet, "https://tracker.example.com", "", nil)
-
-		require.NoError(t, err)
-	})
-
 	t.Run("forwards postData for POST requests", func(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var req map[string]any

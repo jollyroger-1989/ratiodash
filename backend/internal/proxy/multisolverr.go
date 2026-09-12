@@ -20,7 +20,6 @@ import (
 // Config holds the connection details needed to reach a multisolverr instance.
 type Config struct {
 	BaseURL string
-	APIKey  string
 	// Timeout bounds how long multisolverr is allowed to spend solving a
 	// single request (sent as maxTimeout). Defaults to 60s.
 	Timeout time.Duration
@@ -100,9 +99,6 @@ func (c *Client) call(ctx context.Context, req solveRequest) (*solveResponse, er
 		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
-	if c.cfg.APIKey != "" {
-		httpReq.Header.Set("X-Api-Key", c.cfg.APIKey)
-	}
 
 	resp, err := c.http.Do(httpReq)
 	if err != nil {

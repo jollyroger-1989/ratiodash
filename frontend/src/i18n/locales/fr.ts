@@ -167,7 +167,6 @@ export default {
       enabled: 'Activé',
       baseUrl: 'URL de base',
       timeout: 'Délai (secondes)',
-      apiKey: 'Clé API',
       save: 'Enregistrer',
       saving: 'Enregistrement…',
       saved: 'Paramètres multisolverr enregistrés.',

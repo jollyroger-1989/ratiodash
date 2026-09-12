@@ -279,7 +279,6 @@ export interface MultisolverrConfig {
   enabled: boolean
   base_url: string
   timeout_seconds: number
-  has_api_key: boolean
   created_at: string
   updated_at: string
 }
@@ -287,7 +286,6 @@ export interface MultisolverrConfig {
 export interface UpdateMultisolverrConfigInput {
   enabled?: boolean
   base_url?: string
-  api_key?: string
   timeout_seconds?: number
 }
 

@@ -124,17 +124,6 @@
           </div>
         </div>
 
-        <div class="field">
-          <label for="ms-api-key">{{ $t('settings.multisolverr.apiKey') }}</label>
-          <input
-            id="ms-api-key"
-            v-model="multisolverrForm.api_key"
-            type="password"
-            autocomplete="off"
-            :placeholder="multisolverrConfig?.has_api_key ? $t('trackers.modal.credentialPlaceholder') : ''"
-          />
-        </div>
-
         <p v-if="multisolverrTestStatus === 'ok'" class="form-success">{{ $t('settings.multisolverr.testOk') }}</p>
         <p v-if="multisolverrTestStatus === 'error'" class="form-error">{{ multisolverrTestError }}</p>
         <p v-if="multisolverrError" class="form-error">{{ multisolverrError }}</p>
@@ -306,7 +295,7 @@ async function onAPIClientSaved() {
 // ---- Multisolverr proxy ----
 
 const multisolverrConfig = ref<MultisolverrConfig | null>(null)
-const multisolverrForm = ref({ enabled: false, base_url: '', api_key: '', timeout_seconds: 60 })
+const multisolverrForm = ref({ enabled: false, base_url: '', timeout_seconds: 60 })
 const multisolverrSaving = ref(false)
 const multisolverrError = ref('')
 const multisolverrSuccess = ref(false)
@@ -320,7 +309,6 @@ async function fetchMultisolverrConfig() {
   multisolverrForm.value = {
     enabled: cfg.enabled,
     base_url: cfg.base_url,
-    api_key: '',
     timeout_seconds: cfg.timeout_seconds,
   }
 }
@@ -335,13 +323,11 @@ async function saveMultisolverr() {
       base_url: multisolverrForm.value.base_url,
       timeout_seconds: multisolverrForm.value.timeout_seconds,
     }
-    if (multisolverrForm.value.api_key) patch.api_key = multisolverrForm.value.api_key
     const updated = await multisolverrApi.update(patch)
     multisolverrConfig.value = updated
     multisolverrForm.value = {
       enabled: updated.enabled,
       base_url: updated.base_url,
-      api_key: '',
       timeout_seconds: updated.timeout_seconds,
     }
     multisolverrSuccess.value = true

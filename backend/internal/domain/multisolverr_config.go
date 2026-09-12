@@ -11,13 +11,9 @@ type MultisolverrConfig struct {
 	ID             uint      `json:"id"              gorm:"primaryKey"`
 	Enabled        bool      `json:"enabled"         gorm:"not null;default:false"`
 	BaseURL        string    `json:"base_url"        gorm:"not null;default:''"`
-	APIKey         string    `json:"-"               gorm:"not null;default:''"`
 	TimeoutSeconds int       `json:"timeout_seconds" gorm:"not null;default:60"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
-	// HasAPIKey reports whether an API key is stored, without exposing it.
-	// Computed at query time; never persisted.
-	HasAPIKey bool `json:"has_api_key" gorm:"-"`
 }
 
 // UpdateMultisolverrConfigInput carries the fields that may be patched.
@@ -25,7 +21,6 @@ type MultisolverrConfig struct {
 type UpdateMultisolverrConfigInput struct {
 	Enabled        *bool   `json:"enabled,omitempty"`
 	BaseURL        *string `json:"base_url,omitempty"`
-	APIKey         *string `json:"api_key,omitempty"`
 	TimeoutSeconds *int    `json:"timeout_seconds,omitempty"`
 }
 

@@ -16,24 +16,14 @@ import (
 )
 
 func TestMultisolverrConfigService_Get(t *testing.T) {
-	t.Run("reports has_api_key when a key is stored", func(t *testing.T) {
+	t.Run("returns the stored config", func(t *testing.T) {
 		repo := mocks.NewMockMultisolverrConfigRepository(t)
-		repo.EXPECT().Get().Return(&domain.MultisolverrConfig{ID: 1, APIKey: "secret"}, nil)
+		repo.EXPECT().Get().Return(&domain.MultisolverrConfig{ID: 1, BaseURL: "https://solverr.example.com"}, nil)
 
 		cfg, err := service.NewMultisolverrConfigService(repo).Get()
 
 		require.NoError(t, err)
-		assert.True(t, cfg.HasAPIKey)
-	})
-
-	t.Run("reports no api key when none stored", func(t *testing.T) {
-		repo := mocks.NewMockMultisolverrConfigRepository(t)
-		repo.EXPECT().Get().Return(&domain.MultisolverrConfig{ID: 1}, nil)
-
-		cfg, err := service.NewMultisolverrConfigService(repo).Get()
-
-		require.NoError(t, err)
-		assert.False(t, cfg.HasAPIKey)
+		assert.Equal(t, "https://solverr.example.com", cfg.BaseURL)
 	})
 
 	t.Run("propagates repository error", func(t *testing.T) {
@@ -47,21 +37,20 @@ func TestMultisolverrConfigService_Get(t *testing.T) {
 }
 
 func TestMultisolverrConfigService_Update(t *testing.T) {
-	t.Run("updates base_url, api_key and timeout", func(t *testing.T) {
+	t.Run("updates base_url and timeout", func(t *testing.T) {
 		repo := mocks.NewMockMultisolverrConfigRepository(t)
 		repo.EXPECT().Get().Return(&domain.MultisolverrConfig{ID: 1, TimeoutSeconds: 60}, nil)
 		repo.EXPECT().Update(mock.MatchedBy(func(cfg *domain.MultisolverrConfig) bool {
-			return cfg.BaseURL == "https://solverr.example.com" && cfg.APIKey == "k" && cfg.TimeoutSeconds == 30
+			return cfg.BaseURL == "https://solverr.example.com" && cfg.TimeoutSeconds == 30
 		})).Return(nil)
 
 		cfg, err := service.NewMultisolverrConfigService(repo).Update(domain.UpdateMultisolverrConfigInput{
 			BaseURL:        ptr("https://solverr.example.com/"),
-			APIKey:         ptr("k"),
 			TimeoutSeconds: ptr(30),
 		})
 
 		require.NoError(t, err)
-		assert.True(t, cfg.HasAPIKey)
+		assert.Equal(t, "https://solverr.example.com", cfg.BaseURL)
 	})
 
 	t.Run("rejects a non-http(s) base_url", func(t *testing.T) {
@@ -125,7 +114,7 @@ func TestMultisolverrConfigService_Update(t *testing.T) {
 		repo.EXPECT().Update(mock.Anything).Return(errors.New("db error"))
 
 		_, err := service.NewMultisolverrConfigService(repo).Update(domain.UpdateMultisolverrConfigInput{
-			APIKey: ptr("k"),
+			TimeoutSeconds: ptr(30),
 		})
 
 		assert.Error(t, err)

@@ -184,7 +184,6 @@ func (ys *YAMLScraper) multisolverrTransport() (http.RoundTripper, error) {
 	}
 	return proxy.NewTransport(proxy.Config{
 		BaseURL: cfg.BaseURL,
-		APIKey:  cfg.APIKey,
 		Timeout: time.Duration(cfg.TimeoutSeconds) * time.Second,
 	}), nil
 }
