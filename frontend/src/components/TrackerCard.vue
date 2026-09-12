@@ -12,8 +12,8 @@
         ></span>
       </div>
       <div class="card-actions">
-        <button class="btn-refresh" :title="$t('buttons.refresh')" :disabled="refreshing" @click="onRefresh">
-          <font-awesome-icon :icon="['fas', 'rotate-right']" />
+        <button class="btn-refresh" :title="$t('buttons.refresh')" :disabled="refreshing" @click="emit('refresh')">
+          <font-awesome-icon :icon="['fas', 'rotate-right']" :spin="refreshing" />
         </button>
         <button class="btn-edit" :title="$t('buttons.editSite')" @click="emit('edit')">
           <font-awesome-icon :icon="['fas', 'pen']" />
@@ -52,6 +52,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import type { DashboardEntry, TrackerStats } from '@/services/api'
 import { statsApi } from '@/services/api'
+import { useTrackersStore } from '@/stores/trackers'
 import StatsGrid from '@/components/StatsGrid.vue'
 import HistoryTable from '@/components/HistoryTable.vue'
 
@@ -60,20 +61,12 @@ const { t } = useI18n()
 const props = defineProps<{ entry: DashboardEntry }>()
 const emit = defineEmits<{ delete: []; refresh: []; edit: [] }>()
 
-const refreshing = ref(false)
+const store = useTrackersStore()
+const refreshing = computed(() => store.refreshingIds.has(props.entry.tracker.id))
 const showHistory = ref(false)
 const historyLoading = ref(false)
 const historyError = ref('')
 const history = ref<TrackerStats[]>([])
-
-async function onRefresh() {
-  refreshing.value = true
-  try {
-    emit('refresh')
-  } finally {
-    refreshing.value = false
-  }
-}
 
 async function toggleHistory() {
   showHistory.value = !showHistory.value

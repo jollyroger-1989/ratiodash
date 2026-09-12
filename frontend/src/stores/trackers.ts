@@ -20,6 +20,7 @@ export const useTrackersStore = defineStore('trackers', () => {
   const error = ref<string | null>(null)
   const sortBy = ref<SortBy | ''>((localStorage.getItem(STORAGE_SORT_BY) as SortBy | '') || '')
   const sortOrder = ref<SortOrder>((localStorage.getItem(STORAGE_SORT_ORDER) as SortOrder) || 'asc')
+  const refreshingIds = ref<Set<number>>(new Set())
 
   async function fetchAll() {
     loading.value = true
@@ -99,9 +100,19 @@ export const useTrackersStore = defineStore('trackers', () => {
   }
 
   async function refresh(id: number) {
-    await trackersApi.refresh(id)
-    await fetchDashboard()
+    refreshingIds.value = new Set(refreshingIds.value).add(id)
+    error.value = null
+    try {
+      await trackersApi.refresh(id)
+      await fetchDashboard()
+    } catch (e: any) {
+      error.value = e?.response?.data?.detail ?? e?.message ?? 'Failed to refresh tracker.'
+    } finally {
+      const next = new Set(refreshingIds.value)
+      next.delete(id)
+      refreshingIds.value = next
+    }
   }
 
-  return { trackers, dashboard, loading, error, sortBy, sortOrder, fetchAll, fetchDashboard, setSort, create, update, remove, refresh }
+  return { trackers, dashboard, loading, error, sortBy, sortOrder, refreshingIds, fetchAll, fetchDashboard, setSort, create, update, remove, refresh }
 })
